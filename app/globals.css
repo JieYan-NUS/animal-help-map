@@ -1,0 +1,162 @@
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Georgia", "Times New Roman", serif;
+  color: #1f1f1f;
+  background: #faf7f2;
+  line-height: 1.6;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3.5rem;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+nav {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1.5rem 1.5rem 0;
+  font-weight: 600;
+}
+
+nav a {
+  padding-bottom: 0.2rem;
+  border-bottom: 2px solid transparent;
+}
+
+nav a:hover {
+  border-bottom-color: #c07d47;
+}
+
+h2 {
+  margin: 1.5rem 0 0.5rem;
+}
+
+h1 {
+  margin: 1.25rem 0 0.75rem;
+  font-size: 2.2rem;
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+.disclaimer {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #fff4e6;
+  border-left: 4px solid #c07d47;
+  font-size: 0.95rem;
+}
+
+.form {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.field label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #c9c1b8;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 1rem;
+  background: #fff;
+}
+
+.helper {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  color: #4a4038;
+}
+
+.error {
+  margin-top: 0.4rem;
+  color: #9b2c2c;
+  font-size: 0.9rem;
+}
+
+.button {
+  align-self: flex-start;
+  background: #c07d47;
+  color: #fff;
+  border: none;
+  padding: 0.7rem 1.4rem;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: #a86636;
+}
+
+.preview {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #eadbc8;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #2f7a4f;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.success {
+  margin: 0.6rem 0 1rem;
+  color: #24563c;
+  font-weight: 600;
+}
+
+.preview dl {
+  margin: 0;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.preview dt {
+  font-weight: 600;
+}
+
+.preview dd {
+  margin: 0.2rem 0 0;
+  color: #3f352d;
+}
