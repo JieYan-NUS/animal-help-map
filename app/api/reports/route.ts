@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-
-import { createSupabaseClient } from "@/lib/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 
 type ReportRequest = {
   species: string;
@@ -11,6 +10,11 @@ type ReportRequest = {
   longitude?: string;
   contact?: string;
 };
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 const isBlank = (value?: string) => !value || !value.trim();
 
@@ -31,6 +35,7 @@ export async function POST(request: Request) {
 
     const latitudeInput = body.latitude?.trim();
     const longitudeInput = body.longitude?.trim();
+
     const latitude = latitudeInput ? Number(latitudeInput) : null;
     const longitude = longitudeInput ? Number(longitudeInput) : null;
 
@@ -39,39 +44,33 @@ export async function POST(request: Request) {
       (longitudeInput && !Number.isFinite(longitude))
     ) {
       return NextResponse.json(
-        { error: "Latitude and longitude must be valid numbers." },
+        { error: "Latitude/Longitude must be valid numbers." },
         { status: 400 }
       );
     }
 
-    const supabase = createSupabaseClient();
-
-    const { data, error } = await supabase
-      .from("reports")
-      .insert({
+    // IMPORTANT: match your DB column names here
+    const { error } = await supabase.from("reports").insert([
+      {
         species: body.species.trim(),
         condition: body.condition.trim(),
         description: body.description?.trim() || null,
         location_description: body.locationDescription.trim(),
         latitude,
         longitude,
-        reporter_contact: body.contact?.trim() || null
-      })
-      .select("id")
-      .single();
+        reporter_contact: body.contact?.trim() || null,
+        status: "Reported",
+      },
+    ]);
 
-    if (error || !data) {
-      return NextResponse.json(
-        { error: "We couldn't save the report right now." },
-        { status: 500 }
-      );
+    if (error) {
+      console.error("Supabase insert error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ id: data.id });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "We couldn't save the report right now." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("API crash:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

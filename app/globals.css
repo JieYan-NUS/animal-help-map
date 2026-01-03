@@ -51,6 +51,70 @@ h1 {
   font-size: 2.2rem;
 }
 
+.hero {
+  position: relative;
+  width: 100vw;
+  margin: 0 calc(50% - 50vw) 2.5rem;
+  color: #fef7f0;
+}
+
+.hero-media {
+  position: relative;
+  height: clamp(320px, 52vw, 520px);
+  overflow: hidden;
+}
+
+.hero-image {
+  object-fit: cover;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(26, 19, 12, 0.1), rgba(26, 19, 12, 0.65));
+}
+
+.hero-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 2.5rem 1.5rem 2.75rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.hero h1 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(2.1rem, 4vw, 3.1rem);
+  letter-spacing: 0.01em;
+}
+
+.hero-subtitle {
+  margin: 0;
+  max-width: 36rem;
+  color: #f5e8dd;
+  font-size: 1.05rem;
+}
+
+.hero-actions {
+  margin-top: 1.6rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.button.button-secondary {
+  background: transparent;
+  border: 1px solid #f1dfcc;
+  color: #fff;
+}
+
+.button.button-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 p {
   margin: 0 0 1rem;
 }
