@@ -119,13 +119,20 @@ export default function ReportPage() {
         return;
       }
 
-      const data = (await response.json().catch(() => ({}))) as {
-        ok?: boolean;
-        id?: string;
-      };
-      const isSuccess = data.ok === true || !("ok" in data);
+      let data: { ok?: boolean; id?: string };
 
-      if (!isSuccess) {
+      try {
+        data = (await response.json()) as { ok?: boolean; id?: string };
+      } catch (error) {
+        setSubmitError(
+          "We couldn't save your report just now. Please try again."
+        );
+        setSubmitted(null);
+        setSavedReportId(null);
+        return;
+      }
+
+      if (data?.ok !== true) {
         setSubmitError(
           "We couldn't save your report just now. Please try again."
         );
