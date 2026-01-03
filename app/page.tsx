@@ -45,6 +45,10 @@ export default function HomePage() {
         danger, please contact local authorities or emergency veterinary
         services.
       </p>
+      <p className="disclaimer">
+        Designed and built by Yifan Yan, with family collaboration, for the
+        care and protection of animals in need.
+      </p>
     </>
   );
 }
