@@ -111,17 +111,33 @@ export default function ReportPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Request failed");
+        setSubmitError(
+          "We couldn't save your report just now. Please try again."
+        );
+        setSubmitted(null);
+        setSavedReportId(null);
+        return;
       }
 
-      const result = (await response.json()) as { id?: string };
+      const data = (await response.json().catch(() => ({}))) as {
+        ok?: boolean;
+        id?: string;
+      };
+      const isSuccess = data.ok === true || !("ok" in data);
 
-      if (!result.id) {
-        throw new Error("Missing report id");
+      if (!isSuccess) {
+        setSubmitError(
+          "We couldn't save your report just now. Please try again."
+        );
+        setSubmitted(null);
+        setSavedReportId(null);
+        return;
       }
 
       setSubmitted({ ...formData });
-      setSavedReportId(result.id);
+      setSavedReportId(data.id ?? null);
+      setSubmitError(null);
+      setFormData(initialData);
     } catch (error) {
       setSubmitError(
         "We couldn't save your report just now. Please try again."
