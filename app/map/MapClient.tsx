@@ -68,8 +68,8 @@ export default function MapClient() {
       {error && <p className="errorText">{error}</p>}
 
       <div className="mapGrid">
-        <div className="mapPanel">
-          <MapContainer center={center} zoom={12} className="leafletMap">
+        <div className="mapPanel" style={{ height: 520, width: "100%" }}>
+          <MapContainer center={center} zoom={12} className="leafletMap" style={{ height: "100%", width: "100%" }}>
             <TileLayer
               attribution='&copy; OpenStreetMap contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
