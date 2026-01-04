@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useMap } from "react-leaflet";
 import dynamic from "next/dynamic";
 
 import "leaflet/dist/leaflet.css";
@@ -22,9 +23,10 @@ type Report = {
   condition: string;
   description?: string;
   locationDescription?: string | null;
-  latitude: number | null;
-  longitude: number | null;
+  latitude: number | string | null;
+  longitude: number | string | null;
   created_at?: string;
+  reported_at?: string;
   reportedAt?: string;
 };
 
@@ -37,10 +39,10 @@ const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
 const hasValidCoordinates = (report: Report): report is ValidReport =>
-  isFiniteNumber(report.latitude) && isFiniteNumber(report.longitude);
+  Number.isFinite(report.latitude as number) && Number.isFinite(report.longitude as number);
 
 const formatReportedAt = (report: Report): string | null => {
-  const raw = report.created_at ?? report.reportedAt;
+  const raw = report.created_at ?? report.reported_at ?? report.reportedAt;
   if (!raw) return null;
   const date = new Date(raw);
   if (Number.isNaN(date.getTime())) return null;
@@ -67,11 +69,36 @@ const nearestAreaLabel = (report: Report): string => {
 export default function MapClient() {
   const [reports, setReports] = useState<Report[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [markerIcon, setMarkerIcon] = useState<any | null>(null);
-  const validReports = useMemo(
-    () => reports.filter((report) => hasValidCoordinates(report)),
-    [reports]
+  const [markerIcons, setMarkerIcons] = useState<{ default: any; latest: any } | null>(null);
+  const all = useMemo(() => {
+    const toTimestamp = (report: Report) => {
+      const raw = report.created_at ?? report.reported_at ?? report.reportedAt;
+      if (raw) {
+        const ts = new Date(raw).getTime();
+        if (Number.isFinite(ts)) return ts;
+      }
+      if (typeof report.id === "number" && Number.isFinite(report.id)) return report.id;
+      if (typeof report.id === "string") {
+        const parsed = Number(report.id);
+        if (Number.isFinite(parsed)) return parsed;
+      }
+      return 0;
+    };
+
+    return reports.slice().sort((a, b) => toTimestamp(b) - toTimestamp(a));
+  }, [reports]);
+
+  const mappable = useMemo(
+    () =>
+      all.filter(
+        (report): report is ValidReport =>
+          Number.isFinite(report.latitude as number) && Number.isFinite(report.longitude as number)
+      ),
+    [all]
   );
+  const pinned = useMemo(() => mappable.slice(0, 5), [mappable]);
+  const pinnedLatestId = pinned[0]?.id;
+  const list = useMemo(() => all.slice(0, 10), [all]);
 
   useEffect(() => {
     // Load leaflet only in browser
@@ -80,7 +107,7 @@ export default function MapClient() {
       await import("leaflet.markercluster"); // attaches to leaflet
       L = leaflet.default ?? leaflet;
 
-      const icon = L.icon({
+      const defaultIcon = L.icon({
         iconUrl: "/paw-heart-marker.svg",
         iconRetinaUrl: "/paw-heart-marker.svg",
         iconSize: [52, 68],
@@ -88,7 +115,19 @@ export default function MapClient() {
         popupAnchor: [0, -56],
       });
 
-      L.Marker.prototype.options.icon = icon;
+      const latestIcon = L.divIcon({
+        className: "latestMarkerIcon",
+        html: `
+          <div style="width:64px;height:84px;display:flex;align-items:center;justify-content:center;">
+            <div style="width:64px;height:84px;background:url('/paw-heart-marker.svg') no-repeat center/contain;filter:drop-shadow(0 0 6px rgba(245,197,66,0.9)) drop-shadow(0 0 14px rgba(245,197,66,0.8));"></div>
+          </div>
+        `,
+        iconSize: [64, 84],
+        iconAnchor: [32, 84],
+        popupAnchor: [0, -70],
+      });
+
+      L.Marker.prototype.options.icon = defaultIcon;
       if (L.MarkerClusterGroup?.prototype?.options) {
         L.MarkerClusterGroup.prototype.options.iconCreateFunction = (cluster: any) =>
           L.divIcon({
@@ -105,7 +144,7 @@ export default function MapClient() {
           });
       }
 
-      setMarkerIcon(icon);
+      setMarkerIcons({ default: defaultIcon, latest: latestIcon });
     })();
   }, []);
 
@@ -126,6 +165,11 @@ export default function MapClient() {
     // Default to Singapore
     return [1.3521, 103.8198];
   }, []);
+  const latestPoints = useMemo(
+    () => pinned.map((report) => [report.latitude, report.longitude]) as [number, number][],
+    [pinned]
+  );
+  const newestMissingCoords = all[0] ? !hasValidCoordinates(all[0]) : false;
 
   return (
     <main className="page">
@@ -138,19 +182,59 @@ export default function MapClient() {
 
       <div className="mapGrid">
         <div className="mapPanel" style={{ height: 520, width: "100%" }}>
+          {newestMissingCoords ? (
+            <p
+              style={{
+                margin: "0 0 0.8rem",
+                padding: "0.55rem 0.85rem",
+                background: "#fff4e6",
+                border: "1px dashed #eadbc8",
+                borderRadius: 10,
+                fontSize: "0.9rem",
+                color: "#6b4b2a",
+              }}
+            >
+              Newest report is missing coordinates and can't be pinned yet.
+            </p>
+          ) : null}
           <MapContainer center={center} zoom={12} className="leafletMap" style={{ height: "100%", width: "100%" }}>
             <TileLayer
               attribution='&copy; OpenStreetMap contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {validReports.map((r, idx) => (
-              <Marker key={(r.id ?? idx).toString()} position={[r.latitude, r.longitude]} icon={markerIcon ?? undefined}>
+            <FitToBounds points={latestPoints} />
+            {pinned.map((r, idx) => {
+              const isLatest = pinnedLatestId ? r.id === pinnedLatestId : idx === 0;
+              return (
+                <Marker
+                  key={(r.id ?? idx).toString()}
+                  position={[r.latitude, r.longitude]}
+                  icon={(isLatest ? markerIcons?.latest : markerIcons?.default) ?? undefined}
+                >
                 <Popup>
                   {(() => {
                     const reportedAt = formatReportedAt(r);
                     const coords = formatCoords(r);
                     return (
                       <div style={{ minWidth: 220 }}>
+                        {isLatest ? (
+                          <div style={{ marginBottom: 6 }}>
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "2px 8px",
+                                borderRadius: 999,
+                                background: "#f7d26a",
+                                color: "#5d3b00",
+                                fontWeight: 700,
+                                fontSize: 11,
+                                letterSpacing: 0.4,
+                              }}
+                            >
+                              Latest report
+                            </span>
+                          </div>
+                        ) : null}
                         <strong>{r.species}</strong> — {r.condition}
                         {r.description ? <div style={{ marginTop: 6 }}>{r.description}</div> : null}
                         {r.locationDescription ? (
@@ -165,25 +249,46 @@ export default function MapClient() {
                     );
                   })()}
                 </Popup>
-              </Marker>
-            ))}
+                </Marker>
+              );
+            })}
           </MapContainer>
         </div>
 
         <aside className="listPanel">
           <h2 className="listTitle">Latest reports</h2>
           <ul className="list">
-            {validReports.slice(0, 15).map((r, idx) => (
-              <li key={(r.id ?? `list-${idx}`).toString()} className="listItem">
-                <strong>{r.species}</strong> · {r.condition} · {r.locationDescription} ·{" "}
-                {isFiniteNumber(r.latitude) && isFiniteNumber(r.longitude)
-                  ? `${r.latitude.toFixed(5)}, ${r.longitude.toFixed(5)}`
-                  : "Location pending"}
-              </li>
-            ))}
+            {list.map((r, idx) => {
+              const reportedAt = formatReportedAt(r);
+              const coords = formatCoords(r);
+              const meta = coords ? `${coords}${reportedAt ? ` · ${reportedAt}` : ""}` : "Location pending";
+              return (
+                <li key={(r.id ?? `list-${idx}`).toString()} className="listItem">
+                  <strong>{r.species}</strong> · {r.condition}
+                  {r.locationDescription ? ` · ${r.locationDescription}` : ""}
+                  {" · "}
+                  {meta}
+                </li>
+              );
+            })}
           </ul>
         </aside>
       </div>
     </main>
   );
+}
+
+function FitToBounds({ points }: { points: [number, number][] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (points.length === 0) return;
+    if (points.length === 1) {
+      map.setView(points[0], 14);
+      return;
+    }
+    map.fitBounds(points, { padding: [40, 40] });
+  }, [map, points]);
+
+  return null;
 }
