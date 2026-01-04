@@ -17,13 +17,11 @@ export default function HomePage() {
           <div className="hero-overlay" />
         </div>
         <div className="hero-content">
-          <h1>
-            See an animal in need. Help arrives faster when neighbors can find
-            it.
-          </h1>
+          <h1>PawShield</h1>
           <p className="hero-subtitle">
-            Share a quick report or check the map to see if someone nearby is
-            already responding with care.
+            A community shield for animals in need, nearby. Share a quick
+            report or check the map to see if someone nearby is already
+            responding with care.
           </p>
           <div className="hero-actions">
             <Link className="button" href="/report">

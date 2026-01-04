@@ -3,8 +3,9 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Animal Help Map",
-  description: "Report animals in need and find nearby help."
+  title: "PawShield – A Community Shield for Animals",
+  description:
+    "PawShield is a community-powered platform helping animals in need through shared reports and local action."
 };
 
 export default function RootLayout({
