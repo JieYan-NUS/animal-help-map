@@ -11,6 +11,30 @@ type ReportRequest = {
   contact?: string;
 };
 
+type ReportRow = {
+  id: string;
+  species: string;
+  condition: string;
+  description: string | null;
+  location_description: string | null;
+  latitude: number | string | null;
+  longitude: number | string | null;
+  reporter_contact: string | null;
+  created_at: string;
+};
+
+type ReportResponse = {
+  id: string;
+  species: string;
+  condition: string;
+  description: string | null;
+  location_description: string | null;
+  latitude: number | string | null;
+  longitude: number | string | null;
+  contact: string | null;
+  created_at: string;
+};
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -69,6 +93,41 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("API crash:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+export async function GET() {
+  try {
+    const { data, error } = await supabase
+      .from("reports")
+      .select(
+        "id, created_at, species, condition, description, location_description, latitude, longitude, reporter_contact"
+      )
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Supabase fetch error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const reports: ReportResponse[] = (data as ReportRow[] | null)?.map(
+      (report) => ({
+        id: report.id,
+        species: report.species,
+        condition: report.condition,
+        description: report.description ?? null,
+        location_description: report.location_description ?? null,
+        latitude: report.latitude ?? null,
+        longitude: report.longitude ?? null,
+        contact: report.reporter_contact ?? null,
+        created_at: report.created_at
+      })
+    ) ?? [];
+
+    return NextResponse.json(reports);
   } catch (err) {
     console.error("API crash:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
