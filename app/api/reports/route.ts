@@ -41,6 +41,16 @@ const supabase = createClient(
 );
 
 const isBlank = (value?: string) => !value || !value.trim();
+const coerceCoordinate = (value: number | string | null) => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
 
 export async function POST(request: Request) {
   try {
@@ -120,10 +130,10 @@ export async function GET() {
         condition: report.condition,
         description: report.description ?? null,
         location_description: report.location_description ?? null,
-        latitude: report.latitude ?? null,
-        longitude: report.longitude ?? null,
+        latitude: coerceCoordinate(report.latitude),
+        longitude: coerceCoordinate(report.longitude),
         contact: report.reporter_contact ?? null,
-        created_at: report.created_at
+        created_at: report.created_at,
       })
     ) ?? [];
 

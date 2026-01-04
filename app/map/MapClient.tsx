@@ -21,16 +21,57 @@ type Report = {
   species: string;
   condition: string;
   description?: string;
-  locationDescription: string;
+  locationDescription?: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  created_at?: string;
+  reportedAt?: string;
+};
+
+type ValidReport = Report & {
   latitude: number;
   longitude: number;
-  created_at?: string;
+};
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+const hasValidCoordinates = (report: Report): report is ValidReport =>
+  isFiniteNumber(report.latitude) && isFiniteNumber(report.longitude);
+
+const formatReportedAt = (report: Report): string | null => {
+  const raw = report.created_at ?? report.reportedAt;
+  if (!raw) return null;
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString();
+};
+
+const formatCoords = (report: Report): string | null => {
+  if (!isFiniteNumber(report.latitude) || !isFiniteNumber(report.longitude)) return null;
+  return `${report.latitude.toFixed(4)}, ${report.longitude.toFixed(4)}`;
+};
+
+const isWithinSingaporeBounds = (latitude: number, longitude: number): boolean =>
+  latitude >= 1.15 && latitude <= 1.48 && longitude >= 103.6 && longitude <= 104.1;
+
+const nearestAreaLabel = (report: Report): string => {
+  const location = (report.locationDescription ?? "").trim();
+  if (location) return location;
+  if (isFiniteNumber(report.latitude) && isFiniteNumber(report.longitude)) {
+    if (isWithinSingaporeBounds(report.latitude, report.longitude)) return "Singapore (approx.)";
+  }
+  return "(approx.)";
 };
 
 export default function MapClient() {
   const [reports, setReports] = useState<Report[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [markerIcon, setMarkerIcon] = useState<any | null>(null);
+  const validReports = useMemo(
+    () => reports.filter((report) => hasValidCoordinates(report)),
+    [reports]
+  );
 
   useEffect(() => {
     // Load leaflet only in browser
@@ -102,14 +143,27 @@ export default function MapClient() {
               attribution='&copy; OpenStreetMap contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {reports.map((r, idx) => (
+            {validReports.map((r, idx) => (
               <Marker key={(r.id ?? idx).toString()} position={[r.latitude, r.longitude]} icon={markerIcon ?? undefined}>
                 <Popup>
-                  <div style={{ minWidth: 220 }}>
-                    <strong>{r.species}</strong> — {r.condition}
-                    {r.description ? <div style={{ marginTop: 6 }}>{r.description}</div> : null}
-                    <div style={{ marginTop: 6, opacity: 0.8 }}>{r.locationDescription}</div>
-                  </div>
+                  {(() => {
+                    const reportedAt = formatReportedAt(r);
+                    const coords = formatCoords(r);
+                    return (
+                      <div style={{ minWidth: 220 }}>
+                        <strong>{r.species}</strong> — {r.condition}
+                        {r.description ? <div style={{ marginTop: 6 }}>{r.description}</div> : null}
+                        {r.locationDescription ? (
+                          <div style={{ marginTop: 6, opacity: 0.8 }}>{r.locationDescription}</div>
+                        ) : null}
+                        <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75, lineHeight: 1.4 }}>
+                          {reportedAt ? <div>Reported: {reportedAt}</div> : null}
+                          {coords ? <div>Coords: {coords}</div> : null}
+                          <div>Nearest area: {nearestAreaLabel(r)}</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </Popup>
               </Marker>
             ))}
@@ -119,10 +173,12 @@ export default function MapClient() {
         <aside className="listPanel">
           <h2 className="listTitle">Latest reports</h2>
           <ul className="list">
-            {reports.slice(0, 15).map((r, idx) => (
+            {validReports.slice(0, 15).map((r, idx) => (
               <li key={(r.id ?? `list-${idx}`).toString()} className="listItem">
                 <strong>{r.species}</strong> · {r.condition} · {r.locationDescription} ·{" "}
-                {r.latitude.toFixed(5)}, {r.longitude.toFixed(5)}
+                {isFiniteNumber(r.latitude) && isFiniteNumber(r.longitude)
+                  ? `${r.latitude.toFixed(5)}, ${r.longitude.toFixed(5)}`
+                  : "Location pending"}
               </li>
             ))}
           </ul>

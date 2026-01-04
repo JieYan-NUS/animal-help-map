@@ -49,6 +49,20 @@ export default function HomePage() {
         Designed and built by Yifan Yan, with family collaboration, for the
         care and protection of animals in need.
       </p>
+      <footer
+        style={{
+          marginTop: "2rem",
+          fontSize: "0.85rem",
+          color: "#6b635b",
+          textAlign: "center",
+        }}
+      >
+        Open-source project licensed under{" "}
+        <Link href="https://www.gnu.org/licenses/agpl-3.0.html">
+          GNU AGPL-3.0
+        </Link>
+        . Built for community care and transparency.
+      </footer>
     </>
   );
 }
