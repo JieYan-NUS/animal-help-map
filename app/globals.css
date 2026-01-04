@@ -66,14 +66,17 @@ h1 {
   color: #fef7f0;
 }
 
-.hero-media {
+.heroFrame {
   position: relative;
-  height: clamp(320px, 52vw, 520px);
+  width: 100%;
+  height: 520px;
   overflow: hidden;
+  border-radius: 18px;
 }
 
-.hero-image {
+.heroFrame img {
   object-fit: cover;
+  object-position: center;
 }
 
 .hero-overlay {
@@ -410,8 +413,21 @@ p {
 
   .hero-content {
     align-items: center;
+    justify-content: center;
     text-align: center;
     padding: 2rem 1.25rem 2.5rem;
+  }
+
+  .heroFrame {
+    height: min(72vh, 560px);
+  }
+
+  .heroFrame img {
+    object-position: center 30%;
+  }
+
+  .heroContent {
+    padding-top: 16px;
   }
 
   .hero h1 {
@@ -422,5 +438,11 @@ p {
 
   .hero-subtitle {
     max-width: 100%;
+  }
+}
+
+@media (min-width: 641px) {
+  .heroFrame {
+    height: clamp(320px, 52vw, 520px);
   }
 }

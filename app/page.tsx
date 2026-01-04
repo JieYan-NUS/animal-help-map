@@ -5,7 +5,7 @@ export default function HomePage() {
   return (
     <>
       <section className="hero">
-        <div className="hero-media">
+        <div className="heroFrame">
           <Image
             src="/hero.png"
             alt="A gentle close-up of an animal resting safely"
@@ -16,7 +16,7 @@ export default function HomePage() {
           />
           <div className="hero-overlay" />
         </div>
-        <div className="hero-content">
+        <div className="hero-content heroContent">
           <h1>PawShield</h1>
           <p className="hero-subtitle">
             A community shield for animals in need, nearby. Share a quick
