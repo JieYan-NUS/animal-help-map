@@ -30,6 +30,7 @@ type Report = {
 export default function MapClient() {
   const [reports, setReports] = useState<Report[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [markerIcon, setMarkerIcon] = useState<any | null>(null);
 
   useEffect(() => {
     // Load leaflet only in browser
@@ -37,6 +38,33 @@ export default function MapClient() {
       const leaflet = await import("leaflet");
       await import("leaflet.markercluster"); // attaches to leaflet
       L = leaflet.default ?? leaflet;
+
+      const icon = L.icon({
+        iconUrl: "/paw-heart-marker.svg",
+        iconRetinaUrl: "/paw-heart-marker.svg",
+        iconSize: [52, 68],
+        iconAnchor: [26, 68],
+        popupAnchor: [0, -56],
+      });
+
+      L.Marker.prototype.options.icon = icon;
+      if (L.MarkerClusterGroup?.prototype?.options) {
+        L.MarkerClusterGroup.prototype.options.iconCreateFunction = (cluster: any) =>
+          L.divIcon({
+            className: "pawClusterIcon",
+            html: `
+              <div style="position:relative;width:58px;height:58px;display:flex;align-items:center;justify-content:center;background:url('/paw-heart-marker.svg') no-repeat center/contain;">
+                <span style="color:#fff;font-weight:800;font-size:16px;text-shadow:0 1px 2px rgba(0,0,0,0.7);">
+                  ${cluster.getChildCount()}
+                </span>
+              </div>
+            `,
+            iconSize: [58, 58],
+            iconAnchor: [29, 58],
+          });
+      }
+
+      setMarkerIcon(icon);
     })();
   }, []);
 
@@ -75,7 +103,7 @@ export default function MapClient() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             {reports.map((r, idx) => (
-              <Marker key={(r.id ?? idx).toString()} position={[r.latitude, r.longitude]}>
+              <Marker key={(r.id ?? idx).toString()} position={[r.latitude, r.longitude]} icon={markerIcon ?? undefined}>
                 <Popup>
                   <div style={{ minWidth: 220 }}>
                     <strong>{r.species}</strong> — {r.condition}
