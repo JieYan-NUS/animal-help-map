@@ -17,7 +17,7 @@ export default function HomePage() {
           <div className="hero-overlay" />
         </div>
         <div className="hero-content heroContent">
-          <h1>PawShield</h1>
+          <h1>Pawscue</h1>
           <p className="hero-subtitle">
             A community shield for animals in need, nearby. Share a quick
             report or check the map to see if someone nearby is already
