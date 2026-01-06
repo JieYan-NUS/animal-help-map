@@ -108,7 +108,7 @@ export async function submitStory(
 
   const { error: storyError } = await supabase
     .from("stories")
-    .insert([insertPayload], { returning: "minimal" });
+    .insert(insertPayload);
 
   if (storyError) {
     console.error("Story insert error:", storyError);
@@ -140,8 +140,9 @@ export async function submitStory(
 
     if (uploadError) {
       console.error("Story photo upload error:", uploadError);
+      const errorCode = (uploadError as { code?: string }).code;
       const errorMessage = uploadError
-        ? [uploadError.code, uploadError.message].filter(Boolean).join(": ")
+        ? [errorCode, uploadError.message].filter(Boolean).join(": ")
         : "Unknown error";
       return {
         status: "error",
@@ -160,8 +161,7 @@ export async function submitStory(
           story_id: storyId,
           path: photo.path,
           sort_order: photo.sort_order
-        })),
-        { returning: "minimal" }
+        }))
       );
 
     if (photoError) {
