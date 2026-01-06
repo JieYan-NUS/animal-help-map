@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-label="Pawscue story placeholder">
+  <defs>
+    <linearGradient id="warm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f6e4cf"/>
+      <stop offset="100%" stop-color="#fdf7f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#warm)"/>
+  <circle cx="200" cy="180" r="110" fill="#f1d6bb" opacity="0.7"/>
+  <circle cx="980" cy="160" r="90" fill="#e9c6a6" opacity="0.65"/>
+  <rect x="120" y="560" width="960" height="220" rx="28" fill="#fff6ea" opacity="0.8"/>
+  <text x="160" y="640" font-size="54" font-family="Georgia, 'Times New Roman', serif" fill="#8a5b33">
+    Pawscue Story
+  </text>
+  <text x="160" y="705" font-size="28" font-family="Georgia, 'Times New Roman', serif" fill="#a87043">
+    Community rescue moment
+  </text>
+</svg>

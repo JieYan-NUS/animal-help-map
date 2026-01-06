@@ -41,11 +41,20 @@ create policy "Allow anonymous inserts" on public.reports
   with check (true);
 ```
 
+## Stories submission (Phase B)
+
+1) Run the SQL migration in `supabase/migrations/20250210_create_stories.sql`.
+2) Run the SQL migration in `supabase/migrations/202503120900_fix_stories_rls.sql`.
+   - Paste the entire file contents into the Supabase SQL Editor and run it.
+3) Create a Storage bucket named `story-photos` in the Supabase dashboard and set it to public if it does not exist.
+   - Storage > Buckets > New bucket > name `story-photos`, public.
+   - TODO(phase-c): revisit public access and add signed URLs + RLS policies.
+
 ## Environment variables
 
 Add these to `.env.local`:
 
 ```
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
