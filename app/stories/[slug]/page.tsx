@@ -1,10 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { formatAnimalType, getStoryPhotoUrl } from "@/lib/storyUtils";
-
-export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: { slug: string };
@@ -28,6 +27,7 @@ const splitBody = (body: string): string[] =>
   body.split("\n\n").map((paragraph) => paragraph.trim()).filter(Boolean);
 
 export default async function StoryDetailPage({ params }: PageProps) {
+  noStore();
   const supabase = createSupabaseClient();
   const { data, error } = await supabase
     .from("stories")

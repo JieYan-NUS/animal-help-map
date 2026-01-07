@@ -1,9 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { formatAnimalType, getStoryPhotoUrl } from "@/lib/storyUtils";
-
-export const dynamic = "force-dynamic";
 
 type StoryCard = {
   id: string;
@@ -17,6 +16,7 @@ type StoryCard = {
 };
 
 export default async function StoriesPage() {
+  noStore();
   const supabase = createSupabaseClient();
 
   const { data, error } = await supabase

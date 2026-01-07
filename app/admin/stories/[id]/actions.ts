@@ -48,15 +48,20 @@ export const rejectStory = async (formData: FormData) => {
   }
 
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("stories")
     .update({ status: "rejected", published_at: null })
-    .eq("id", storyId);
+    .eq("id", storyId)
+    .select("slug")
+    .single();
 
-  if (error) {
+  if (error || !data?.slug) {
     console.error("Reject story error:", error);
     redirect(`/admin/stories/${storyId}?updated=error`);
   }
+
+  revalidatePath("/stories");
+  revalidatePath(`/stories/${data.slug}`);
 
   redirect(`/admin/stories/${storyId}?updated=rejected`);
 };
