@@ -3,7 +3,6 @@
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { createStorySlug, sanitizeFileName } from "@/lib/storyUtils";
 
-const MAX_PHOTOS = 3;
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -56,24 +55,47 @@ export async function submitStory(
     fieldErrors.animal_type = "Please choose a valid animal type.";
   }
 
-  const files = formData
-    .getAll("photos")
-    .filter((file): file is File => file instanceof File && file.size > 0);
+  const beforePhoto = formData.get("before_photo");
+  const afterPhoto = formData.get("after_photo");
 
-  if (files.length > MAX_PHOTOS) {
-    fieldErrors.photos = "You can upload up to 3 photos.";
-  }
+  const validatePhoto = (
+    file: unknown,
+    field: string,
+    required: boolean,
+    label: string
+  ) => {
+    if (!(file instanceof File) || file.size === 0) {
+      if (required) {
+        fieldErrors[field] = `${label} is required.`;
+      }
+      return null;
+    }
 
-  for (const file of files) {
     if (!ALLOWED_MIME_TYPES.has(file.type)) {
-      fieldErrors.photos = "Only JPG, PNG, or WebP images are allowed.";
-      break;
+      fieldErrors[field] = `Only JPG, PNG, or WebP images are allowed for the ${label.toLowerCase()}.`;
+      return null;
     }
+
     if (file.size > MAX_FILE_BYTES) {
-      fieldErrors.photos = "Each photo must be 5MB or smaller.";
-      break;
+      fieldErrors[field] = `${label} must be 5MB or smaller.`;
+      return null;
     }
-  }
+
+    return file;
+  };
+
+  const beforeFile = validatePhoto(
+    beforePhoto,
+    "before_photo",
+    true,
+    "Before photo"
+  );
+  const afterFile = validatePhoto(
+    afterPhoto,
+    "after_photo",
+    false,
+    "After photo"
+  );
 
   if (Object.keys(fieldErrors).length > 0) {
     return {
@@ -121,22 +143,20 @@ export async function submitStory(
     };
   }
 
-  const uploadedPaths: { path: string; sort_order: number }[] = [];
+  const uploadedPaths: { path: string; photo_type: "before" | "after" }[] = [];
 
-  for (const [index, file] of files.entries()) {
+  const uploadPhoto = async (file: File, photoType: "before" | "after") => {
     const safeName = sanitizeFileName(file.name);
     const extension = safeName.includes(".")
       ? safeName.split(".").pop()
       : undefined;
-    const filename = extension
-      ? `${crypto.randomUUID()}.${extension}`
-      : crypto.randomUUID();
+    const filename = extension ? `${photoType}.${extension}` : photoType;
     const path = `stories/${storyId}/${filename}`;
 
     // Requires the "story-photos" bucket to exist (public for Phase B).
     const { error: uploadError } = await supabase.storage
       .from("story-photos")
-      .upload(path, file, { contentType: file.type });
+      .upload(path, file, { contentType: file.type, upsert: true });
 
     if (uploadError) {
       console.error("Story photo upload error:", uploadError);
@@ -145,24 +165,34 @@ export async function submitStory(
         ? [errorCode, uploadError.message].filter(Boolean).join(": ")
         : "Unknown error";
       return {
-        status: "error",
+        status: "error" as const,
         message: `We saved your story, but uploading a photo failed. ${errorMessage}`
       };
     }
 
-    uploadedPaths.push({ path, sort_order: index });
+    uploadedPaths.push({ path, photo_type: photoType });
+    return null;
+  };
+
+  if (beforeFile) {
+    const uploadState = await uploadPhoto(beforeFile, "before");
+    if (uploadState) return uploadState;
+  }
+
+  if (afterFile) {
+    const uploadState = await uploadPhoto(afterFile, "after");
+    if (uploadState) return uploadState;
   }
 
   if (uploadedPaths.length > 0) {
-    const { error: photoError } = await supabase
-      .from("story_photos")
-      .insert(
-        uploadedPaths.map((photo) => ({
-          story_id: storyId,
-          path: photo.path,
-          sort_order: photo.sort_order
-        }))
-      );
+    const { error: photoError } = await supabase.from("story_photos").insert(
+      uploadedPaths.map((photo, index) => ({
+        story_id: storyId,
+        path: photo.path,
+        photo_type: photo.photo_type,
+        sort_order: index
+      }))
+    );
 
     if (photoError) {
       console.error("Story photos insert error:", photoError);

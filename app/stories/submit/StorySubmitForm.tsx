@@ -13,22 +13,17 @@ const animalOptions = [
   { value: "other", label: "Other" }
 ];
 
-const validateFiles = (files: FileList | null): string | null => {
-  if (!files || files.length === 0) return null;
-  if (files.length > 3) return "Please upload no more than 3 photos.";
-
-  for (const file of Array.from(files)) {
-    const isAllowedType =
-      ["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
-      /[.]?(jpe?g|png|webp)$/i.test(file.name);
-    if (!isAllowedType) {
-      return "Only JPG, PNG, or WebP images are allowed.";
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      return "Each photo must be 5MB or smaller.";
-    }
+const validateFile = (file: File | null, label: string): string | null => {
+  if (!file) return null;
+  const isAllowedType =
+    ["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+    /[.]?(jpe?g|png|webp)$/i.test(file.name);
+  if (!isAllowedType) {
+    return `Only JPG, PNG, or WebP images are allowed for the ${label.toLowerCase()}.`;
   }
-
+  if (file.size > 5 * 1024 * 1024) {
+    return `${label} must be 5MB or smaller.`;
+  }
   return null;
 };
 
@@ -73,11 +68,32 @@ export default function StorySubmitForm() {
       return;
     }
 
-    const fileInput = form.elements.namedItem("photos") as HTMLInputElement;
-    const fileError = validateFiles(fileInput?.files ?? null);
-    if (fileError) {
+    const beforeInput = form.elements.namedItem(
+      "before_photo"
+    ) as HTMLInputElement;
+    const afterInput = form.elements.namedItem(
+      "after_photo"
+    ) as HTMLInputElement;
+    const beforeFile = beforeInput?.files?.[0] ?? null;
+    const afterFile = afterInput?.files?.[0] ?? null;
+
+    if (!beforeFile) {
       event.preventDefault();
-      setClientError(fileError);
+      setClientError("Please upload a before photo.");
+      return;
+    }
+
+    const beforeError = validateFile(beforeFile, "Before photo");
+    if (beforeError) {
+      event.preventDefault();
+      setClientError(beforeError);
+      return;
+    }
+
+    const afterError = validateFile(afterFile, "After photo");
+    if (afterError) {
+      event.preventDefault();
+      setClientError(afterError);
     }
   };
 
@@ -239,22 +255,42 @@ export default function StorySubmitForm() {
       </div>
 
       <div className="field">
-        <label htmlFor="photos">Photos (optional, up to 3)</label>
-        <p className="helper">JPG, PNG, or WebP. Max 5MB each.</p>
+        <label htmlFor="before_photo">Before photo (required)</label>
+        <p className="helper">JPG, PNG, or WebP. Max 5MB.</p>
         <input
-          id="photos"
-          name="photos"
+          id="before_photo"
+          name="before_photo"
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          multiple
-          aria-invalid={Boolean(state.fieldErrors?.photos)}
+          required
+          aria-invalid={Boolean(state.fieldErrors?.before_photo)}
           aria-describedby={
-            state.fieldErrors?.photos ? "photos-error" : undefined
+            state.fieldErrors?.before_photo ? "before-photo-error" : undefined
           }
         />
-        {state.fieldErrors?.photos ? (
-          <p className="error" id="photos-error">
-            {state.fieldErrors.photos}
+        {state.fieldErrors?.before_photo ? (
+          <p className="error" id="before-photo-error">
+            {state.fieldErrors.before_photo}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="field">
+        <label htmlFor="after_photo">After photo (optional)</label>
+        <p className="helper">JPG, PNG, or WebP. Max 5MB.</p>
+        <input
+          id="after_photo"
+          name="after_photo"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          aria-invalid={Boolean(state.fieldErrors?.after_photo)}
+          aria-describedby={
+            state.fieldErrors?.after_photo ? "after-photo-error" : undefined
+          }
+        />
+        {state.fieldErrors?.after_photo ? (
+          <p className="error" id="after-photo-error">
+            {state.fieldErrors.after_photo}
           </p>
         ) : null}
       </div>

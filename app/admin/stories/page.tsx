@@ -27,11 +27,13 @@ type StoryPhotoRow = {
   story_id: string;
   path: string;
   sort_order: number | null;
+  photo_type: string | null;
 };
 
 type StoryPhoto = {
   path: string;
   publicUrl: string;
+  photo_type: string | null;
 };
 
 const allowedStatuses = ["pending", "approved", "rejected"] as const;
@@ -68,7 +70,7 @@ export default async function AdminStoriesPage({
   if (storyIds.length > 0) {
     const { data: photoData, error: photoError } = await supabase
       .from("story_photos")
-      .select("story_id, path, sort_order")
+      .select("story_id, path, sort_order, photo_type")
       .in("story_id", storyIds)
       .order("story_id")
       .order("sort_order");
@@ -99,7 +101,8 @@ export default async function AdminStoriesPage({
 
       photosByStoryId[photo.story_id].push({
         path: photo.path,
-        publicUrl
+        publicUrl,
+        photo_type: photo.photo_type
       });
     });
   }
@@ -167,28 +170,44 @@ export default async function AdminStoriesPage({
               <h2 className="admin-story-title">{story.title}</h2>
               <p className="admin-story-excerpt">{story.excerpt}</p>
               {photosByStoryId[story.id]?.length ? (
-                <div className="admin-story-thumbnails" aria-label="Story photos">
-                  {photosByStoryId[story.id]
-                    .slice(0, 3)
-                    .map((photo, index, sliced) => {
-                      const total = photosByStoryId[story.id].length;
-                      const remaining = total - sliced.length;
+                <div
+                  className="admin-story-thumbnails"
+                  aria-label="Story photos"
+                >
+                  {(() => {
+                    const photos = photosByStoryId[story.id];
+                    const before =
+                      photos.find((photo) => photo.photo_type === "before") ??
+                      photos[0];
+                    const after =
+                      photos.find((photo) => photo.photo_type === "after") ??
+                      null;
 
-                      return (
-                        <div className="admin-story-thumb" key={photo.path}>
-                          <img
-                            alt={`${story.title} photo ${index + 1}`}
-                            loading="lazy"
-                            src={photo.publicUrl}
-                          />
-                          {index === sliced.length - 1 && remaining > 0 ? (
-                            <span className="admin-story-thumb-more">
-                              +{remaining}
-                            </span>
-                          ) : null}
-                        </div>
-                      );
-                    })}
+                    return (
+                      <>
+                        {before ? (
+                          <div className="admin-story-thumb" key={before.path}>
+                            <img
+                              alt={`${story.title} before`}
+                              loading="lazy"
+                              src={before.publicUrl}
+                            />
+                            <span className="admin-story-thumb-tag">Before</span>
+                          </div>
+                        ) : null}
+                        {after ? (
+                          <div className="admin-story-thumb" key={after.path}>
+                            <img
+                              alt={`${story.title} after`}
+                              loading="lazy"
+                              src={after.publicUrl}
+                            />
+                            <span className="admin-story-thumb-tag">After</span>
+                          </div>
+                        ) : null}
+                      </>
+                    );
+                  })()}
                 </div>
               ) : null}
               <div className="admin-story-footer">

@@ -4,6 +4,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { formatAnimalType, getStoryPhotoUrl } from "@/lib/storyUtils";
+import BeforeAfterSlider from "../BeforeAfterSlider";
 
 type PageProps = {
   params: { slug: string };
@@ -20,7 +21,11 @@ type StoryDetail = {
   content: string;
   author_name: string | null;
   author_contact: string | null;
-  story_photos?: { path: string; sort_order: number }[] | null;
+  story_photos?: {
+    path: string;
+    sort_order: number;
+    photo_type: string | null;
+  }[] | null;
 };
 
 const splitBody = (body: string): string[] =>
@@ -33,7 +38,7 @@ export default async function StoryDetailPage({ params }: PageProps) {
     .from("stories")
     .select(`
 id, title, slug, animal_type, city, month_year, excerpt, content, author_name, author_contact, published_at,
-story_photos ( path, sort_order )
+story_photos ( path, sort_order, photo_type )
 `)
     .eq("slug", params.slug)
     .eq("status", "approved")
@@ -47,10 +52,15 @@ story_photos ( path, sort_order )
 
   const story = data as StoryDetail;
   const photos = story.story_photos ?? [];
-  const heroPath = photos[0]?.path ?? null;
-  const heroImage = heroPath
-    ? getStoryPhotoUrl(heroPath)
+  const beforePhoto =
+    photos.find((photo) => photo.photo_type === "before") ?? photos[0] ?? null;
+  const afterPhoto =
+    photos.find((photo) => photo.photo_type === "after") ?? null;
+  const hasBeforePhoto = Boolean(beforePhoto);
+  const beforeImage = beforePhoto
+    ? getStoryPhotoUrl(beforePhoto.path)
     : "/stories/placeholder-1.svg";
+  const afterImage = afterPhoto?.path ? getStoryPhotoUrl(afterPhoto.path) : null;
 
   return (
     <>
@@ -69,30 +79,27 @@ story_photos ( path, sort_order )
         </div>
       </header>
 
-      <div className="story-hero">
-        <Image
-          src={heroImage}
-          alt={`Cover for ${story.title}`}
-          fill
+      {hasBeforePhoto && afterImage ? (
+        <BeforeAfterSlider
+          className="story-hero"
+          beforeSrc={beforeImage}
+          afterSrc={afterImage}
+          beforeAlt={`Before photo for ${story.title}`}
+          afterAlt={`After photo for ${story.title}`}
           sizes="(max-width: 720px) 100vw, 720px"
           priority
         />
-      </div>
-
-      {photos.length > 1 ? (
-        <section className="story-gallery" aria-label="Story photos">
-          {photos.slice(1).map((photo, index) => (
-            <div className="story-gallery-item" key={`${photo.path}-${index}`}>
-              <Image
-                src={getStoryPhotoUrl(photo.path)}
-                alt={`Story photo ${index + 2} for ${story.title}`}
-                fill
-                sizes="(max-width: 720px) 100vw, 33vw"
-              />
-            </div>
-          ))}
-        </section>
-      ) : null}
+      ) : (
+        <div className="story-hero">
+          <Image
+            src={beforeImage}
+            alt={`Cover for ${story.title}`}
+            fill
+            sizes="(max-width: 720px) 100vw, 720px"
+            priority
+          />
+        </div>
+      )}
 
       <section className="story-body">
         {splitBody(story.content).map((paragraph, index) => (

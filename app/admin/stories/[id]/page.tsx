@@ -17,6 +17,7 @@ type AdminStoryDetailPageProps = {
 type StoryPhoto = {
   path: string;
   sort_order: number;
+  photo_type: string | null;
 };
 
 type StoryDetail = {
@@ -57,7 +58,7 @@ export default async function AdminStoryDetailPage({
   const { data, error } = await supabase
     .from("stories")
     .select(
-      "id, slug, title, excerpt, content, animal_type, city, month_year, author_name, author_contact, created_at, published_at, status, story_photos (path, sort_order)"
+      "id, slug, title, excerpt, content, animal_type, city, month_year, author_name, author_contact, created_at, published_at, status, story_photos (path, sort_order, photo_type)"
     )
     .eq("id", params.id)
     .order("sort_order", { foreignTable: "story_photos", ascending: true })
@@ -84,6 +85,12 @@ export default async function AdminStoryDetailPage({
       .getPublicUrl(photo.path);
     return { ...photo, url: publicData.publicUrl };
   });
+  const beforePhoto =
+    photoUrls.find((photo) => photo.photo_type === "before") ??
+    photoUrls[0] ??
+    null;
+  const afterPhoto =
+    photoUrls.find((photo) => photo.photo_type === "after") ?? null;
 
   const updatedMessage =
     searchParams?.updated && statusCopy[searchParams.updated]
@@ -182,21 +189,35 @@ export default async function AdminStoryDetailPage({
       </section>
 
       <section className="admin-photo-grid" aria-label="Story photos">
-        {photoUrls.length === 0 ? (
+        {!beforePhoto && !afterPhoto ? (
           <div className="admin-empty">
             <p>No photos attached.</p>
           </div>
         ) : (
-          photoUrls.map((photo, index) => (
-            <figure className="admin-photo" key={`${photo.path}-${index}`}>
-              <Image
-                src={photo.url}
-                alt={`Story photo ${index + 1} for ${story.title}`}
-                fill
-                sizes="(max-width: 720px) 100vw, 33vw"
-              />
-            </figure>
-          ))
+          <>
+            {beforePhoto ? (
+              <figure className="admin-photo" key={beforePhoto.path}>
+                <Image
+                  src={beforePhoto.url}
+                  alt={`Before photo for ${story.title}`}
+                  fill
+                  sizes="(max-width: 720px) 100vw, 33vw"
+                />
+                <figcaption>Before</figcaption>
+              </figure>
+            ) : null}
+            {afterPhoto ? (
+              <figure className="admin-photo" key={afterPhoto.path}>
+                <Image
+                  src={afterPhoto.url}
+                  alt={`After photo for ${story.title}`}
+                  fill
+                  sizes="(max-width: 720px) 100vw, 33vw"
+                />
+                <figcaption>After</figcaption>
+              </figure>
+            ) : null}
+          </>
         )}
       </section>
     </>

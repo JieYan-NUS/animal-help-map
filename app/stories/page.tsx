@@ -3,6 +3,7 @@ import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { formatAnimalType, getStoryPhotoUrl } from "@/lib/storyUtils";
+import BeforeAfterSlider from "./BeforeAfterSlider";
 
 type StoryCard = {
   id: string;
@@ -12,7 +13,11 @@ type StoryCard = {
   animal_type: string;
   city: string;
   month_year: string;
-  story_photos?: { path: string; sort_order: number }[] | null;
+  story_photos?: {
+    path: string;
+    sort_order: number;
+    photo_type: string | null;
+  }[] | null;
 };
 
 export default async function StoriesPage() {
@@ -22,7 +27,7 @@ export default async function StoriesPage() {
   const { data, error } = await supabase
     .from("stories")
     .select(
-      "id, slug, title, excerpt, animal_type, city, month_year, story_photos (path, sort_order)"
+      "id, slug, title, excerpt, animal_type, city, month_year, story_photos (path, sort_order, photo_type)"
     )
     .eq("status", "approved")
     .not("published_at", "is", null)
@@ -58,21 +63,42 @@ export default async function StoriesPage() {
       ) : (
         <section className="stories-grid" aria-label="Community rescue stories">
           {stories.map((story) => {
-            const photoPath = story.story_photos?.[0]?.path ?? null;
-            const coverImage = photoPath
-              ? getStoryPhotoUrl(photoPath)
+            const photos = story.story_photos ?? [];
+            const beforePhoto =
+              photos.find((photo) => photo.photo_type === "before") ??
+              photos[0] ??
+              null;
+            const afterPhoto =
+              photos.find((photo) => photo.photo_type === "after") ?? null;
+            const hasBeforePhoto = Boolean(beforePhoto);
+            const beforeImage = beforePhoto
+              ? getStoryPhotoUrl(beforePhoto.path)
               : "/stories/placeholder-1.svg";
+            const afterImage = afterPhoto?.path
+              ? getStoryPhotoUrl(afterPhoto.path)
+              : null;
+            const hasAfterPhoto = Boolean(afterImage);
 
             return (
               <article className="story-card" key={story.slug}>
-                <div className="story-card-image">
-                  <Image
-                    src={coverImage}
-                    alt={`Cover for ${story.title}`}
-                    fill
-                    sizes="(max-width: 720px) 100vw, 50vw"
+                {hasBeforePhoto && hasAfterPhoto ? (
+                  <BeforeAfterSlider
+                    className="story-card-image"
+                    beforeSrc={beforeImage}
+                    afterSrc={afterImage!}
+                    beforeAlt={`Before photo for ${story.title}`}
+                    afterAlt={`After photo for ${story.title}`}
                   />
-                </div>
+                ) : (
+                  <div className="story-card-image">
+                    <Image
+                      alt={`Cover for ${story.title}`}
+                      src={beforeImage}
+                      fill
+                      sizes="(max-width: 720px) 100vw, 50vw"
+                    />
+                  </div>
+                )}
                 <div className="story-card-body">
                   <div className="story-card-meta">
                     <span className="story-tag">

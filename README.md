@@ -50,6 +50,14 @@ create policy "Allow anonymous inserts" on public.reports
    - Storage > Buckets > New bucket > name `story-photos`, public.
    - TODO(phase-c): revisit public access and add signed URLs + RLS policies.
 
+## Hosted Supabase migrations
+
+1) Log in: `supabase login`
+2) Link the hosted project: `supabase link --project-ref <PROJECT_REF>`
+3) Apply migrations: `supabase db push` (or `supabase migration up` if this repo expects it)
+4) If the API schema cache lags, run `notify pgrst, 'reload schema';` in the SQL editor.
+5) One-time dev check: confirm `.env.local` points to the intended Supabase project (staging vs production) before testing writes.
+
 ## Environment variables
 
 Add these to `.env.local`:
