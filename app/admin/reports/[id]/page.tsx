@@ -20,16 +20,16 @@ type ReportDetail = {
   location_description: string | null;
   latitude: number | string | null;
   longitude: number | string | null;
+  address: string | null;
+  address_source: string | null;
   reporter_contact: string | null;
   status: string | null;
 };
 
-const formatCoordinates = (report: ReportDetail) => {
-  if (report.latitude == null || report.longitude == null) {
-    return "Not provided";
-  }
-  return `${report.latitude}, ${report.longitude}`;
-};
+const formatAddress = (report: ReportDetail) =>
+  report.address?.trim() ||
+  report.location_description?.trim() ||
+  "Not provided";
 
 export default async function AdminReportDetailPage({
   params
@@ -42,7 +42,7 @@ export default async function AdminReportDetailPage({
   const { data, error } = await supabase
     .from("reports")
     .select(
-      "id, created_at, species, condition, description, location_description, latitude, longitude, reporter_contact, status"
+      "id, created_at, species, condition, description, location_description, latitude, longitude, address, address_source, reporter_contact, status"
     )
     .eq("id", params.id)
     .single();
@@ -117,8 +117,8 @@ export default async function AdminReportDetailPage({
                 <dd>{report.reporter_contact || "Not provided"}</dd>
               </div>
               <div>
-                <dt>Coordinates</dt>
-                <dd>{formatCoordinates(report)}</dd>
+                <dt>Address</dt>
+                <dd>{formatAddress(report)}</dd>
               </div>
               <div>
                 <dt>Status</dt>

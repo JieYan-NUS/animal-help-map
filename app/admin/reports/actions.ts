@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { isAdminRequest } from "@/lib/admin/auth";
+import { reverseGeocodeWithMapbox } from "@/lib/geocode";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const requireAdmin = () => {
   if (!isAdminRequest()) {
@@ -51,4 +53,74 @@ export const deleteReport = async (formData: FormData) => {
   revalidatePath("/report");
 
   redirect("/admin/reports?updated=deleted");
+};
+
+type PendingReportRow = {
+  id: string;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+export const backfillPendingAddresses = async () => {
+  requireAdmin();
+
+  const supabase = createSupabaseAdminClient();
+
+  const { data, error } = await supabase
+    .from("reports")
+    .select("id, latitude, longitude")
+    .is("address", null)
+    .not("latitude", "is", null)
+    .not("longitude", "is", null);
+
+  if (error) {
+    console.error("Backfill reports fetch error:", error);
+    return;
+  }
+
+  const reports = (data as PendingReportRow[] | null) ?? [];
+
+  for (const report of reports) {
+    try {
+      const latitude = report.latitude;
+      const longitude = report.longitude;
+      if (latitude == null || longitude == null) {
+        continue;
+      }
+      const { addressText, requestUrl } = await reverseGeocodeWithMapbox({
+        latitude,
+        longitude
+      });
+      const hasAddress = Boolean(addressText && addressText.trim());
+      console.info(
+        `Backfill report ${report.id}: ${requestUrl} address=${hasAddress ? "found" : "missing"}`
+      );
+      if (hasAddress) {
+        const { error: updateError } = await supabase
+          .from("reports")
+          .update({
+            address: addressText,
+            address_source: "mapbox",
+            geocoded_at: new Date().toISOString()
+          })
+          .eq("id", report.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+      }
+    } catch (error) {
+      console.error("Backfill report error:", error);
+      await supabase
+        .from("reports")
+        .update({
+          address_source: "error"
+        })
+        .eq("id", report.id);
+    }
+  }
+
+  revalidatePath("/map");
+  revalidatePath("/admin/reports");
+  redirect("/admin/reports?updated=backfilled");
 };

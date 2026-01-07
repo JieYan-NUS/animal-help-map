@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isAdminRequest } from "@/lib/admin/auth";
 import { logoutAdmin } from "@/app/admin/actions";
+import { backfillPendingAddresses } from "@/app/admin/reports/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ type ReportRow = {
 };
 
 const statusCopy: Record<string, string> = {
+  backfilled: "Addresses backfilled.",
   deleted: "Report deleted.",
   error: "We couldn't delete that report. Try again."
 };
@@ -83,6 +85,11 @@ export default async function AdminReportsPage({
           >
             Review reports
           </Link>
+          <form action={backfillPendingAddresses}>
+            <button className="admin-button" type="submit">
+              Backfill pending addresses
+            </button>
+          </form>
           <form action={logoutAdmin}>
             <button className="admin-button" type="submit">
               Log out

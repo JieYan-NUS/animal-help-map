@@ -57,4 +57,5 @@ Add these to `.env.local`:
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+MAPBOX_API_KEY=your_mapbox_access_token
 ```

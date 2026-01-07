@@ -19,6 +19,9 @@ type ReportRow = {
   location_description: string | null;
   latitude: number | string | null;
   longitude: number | string | null;
+  address: string | null;
+  address_source: string | null;
+  geocoded_at: string | null;
   reporter_contact: string | null;
   created_at: string;
 };
@@ -31,6 +34,9 @@ type ReportResponse = {
   location_description: string | null;
   latitude: number | string | null;
   longitude: number | string | null;
+  address: string | null;
+  addressSource: string | null;
+  geocodedAt: string | null;
   contact: string | null;
   created_at: string;
 };
@@ -41,6 +47,30 @@ const supabase = createClient(
 );
 
 const isBlank = (value?: string) => !value || !value.trim();
+
+const fetchReverseGeocode = async (
+  latitude: number,
+  longitude: number
+): Promise<string | null> => {
+  const token = process.env.MAPBOX_API_KEY;
+  if (!token) return null;
+
+  const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&limit=1`;
+  try {
+    const response = await fetch(endpoint, { cache: "no-store" });
+    if (!response.ok) {
+      console.error("Mapbox reverse geocode error:", response.status);
+      return null;
+    }
+    const data = (await response.json()) as { features?: { place_name?: string }[] };
+    const placeName = data?.features?.[0]?.place_name;
+    return placeName?.trim() ? placeName.trim() : null;
+  } catch (error) {
+    console.error("Mapbox reverse geocode crash:", error);
+    return null;
+  }
+};
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as ReportRequest;
@@ -72,6 +102,18 @@ export async function POST(request: Request) {
       );
     }
 
+    let address: string | null = null;
+    let addressSource: string | null = null;
+    let geocodedAt: string | null = null;
+
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      address = await fetchReverseGeocode(latitude as number, longitude as number);
+      if (address) {
+        addressSource = "mapbox";
+        geocodedAt = new Date().toISOString();
+      }
+    }
+
     // IMPORTANT: match your DB column names here
     const { error } = await supabase.from("reports").insert([
       {
@@ -81,6 +123,9 @@ export async function POST(request: Request) {
         location_description: body.locationDescription.trim(),
         latitude,
         longitude,
+        address,
+        address_source: addressSource,
+        geocoded_at: geocodedAt,
         reporter_contact: body.contact?.trim() || null,
         status: "Reported",
       },
@@ -103,7 +148,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("reports")
       .select(
-        "id, created_at, species, condition, description, location_description, latitude, longitude, reporter_contact"
+        "id, created_at, species, condition, description, location_description, latitude, longitude, address, address_source, geocoded_at, reporter_contact"
       )
       .order("created_at", { ascending: false });
 
@@ -121,6 +166,9 @@ export async function GET() {
         location_description: report.location_description ?? null,
         latitude: report.latitude,
         longitude: report.longitude,
+        address: report.address ?? null,
+        addressSource: report.address_source ?? null,
+        geocodedAt: report.geocoded_at ?? null,
         contact: report.reporter_contact ?? null,
         created_at: report.created_at,
       })

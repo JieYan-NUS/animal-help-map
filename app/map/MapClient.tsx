@@ -23,8 +23,12 @@ type Report = {
   condition: string;
   description?: string;
   locationDescription?: string | null;
+  location_description?: string | null;
   latitude: number | string | null;
   longitude: number | string | null;
+  address?: string | null;
+  addressSource?: string | null;
+  geocodedAt?: string | null;
   created_at?: string;
   reported_at?: string;
   reportedAt?: string;
@@ -38,8 +42,22 @@ type ValidReport = Report & {
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
-const hasValidCoordinates = (report: Report): report is ValidReport =>
-  Number.isFinite(report.latitude as number) && Number.isFinite(report.longitude as number);
+const parseCoordinate = (value: number | string | null | undefined): number | null => {
+  if (value == null) return null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return Number.isFinite(value) ? value : null;
+};
+
+const hasValidCoordinates = (report: Report): report is ValidReport => {
+  const latitude = parseCoordinate(report.latitude);
+  const longitude = parseCoordinate(report.longitude);
+  return latitude != null && longitude != null;
+};
 
 const formatReportedAt = (report: Report): string | null => {
   const raw = report.created_at ?? report.reported_at ?? report.reportedAt;
@@ -49,21 +67,31 @@ const formatReportedAt = (report: Report): string | null => {
   return date.toLocaleString();
 };
 
-const formatCoords = (report: Report): string | null => {
-  if (!isFiniteNumber(report.latitude) || !isFiniteNumber(report.longitude)) return null;
-  return `${report.latitude.toFixed(4)}, ${report.longitude.toFixed(4)}`;
+const resolveLocationDescription = (report: Report): string | null => {
+  const location = report.locationDescription ?? report.location_description;
+  return location?.trim() || null;
 };
 
-const isWithinSingaporeBounds = (latitude: number, longitude: number): boolean =>
-  latitude >= 1.15 && latitude <= 1.48 && longitude >= 103.6 && longitude <= 104.1;
+const formatAddress = (report: Report): string | null => {
+  const address = report.address?.trim();
+  if (address) return address;
+  return null;
+};
+
+const formatCoordinates = (report: Report): string | null => {
+  const latitude = parseCoordinate(report.latitude);
+  const longitude = parseCoordinate(report.longitude);
+  if (latitude == null || longitude == null) return null;
+  return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+};
 
 const nearestAreaLabel = (report: Report): string => {
-  const location = (report.locationDescription ?? "").trim();
+  const location = resolveLocationDescription(report);
   if (location) return location;
-  if (isFiniteNumber(report.latitude) && isFiniteNumber(report.longitude)) {
-    if (isWithinSingaporeBounds(report.latitude, report.longitude)) return "Singapore (approx.)";
+  if (isFiniteNumber(parseCoordinate(report.latitude)) && isFiniteNumber(parseCoordinate(report.longitude))) {
+    return "Approximate area";
   }
-  return "(approx.)";
+  return "Area pending";
 };
 
 export default function MapClient() {
@@ -90,10 +118,16 @@ export default function MapClient() {
 
   const mappable = useMemo(
     () =>
-      all.filter(
-        (report): report is ValidReport =>
-          Number.isFinite(report.latitude as number) && Number.isFinite(report.longitude as number)
-      ),
+      all
+        .map((report) => {
+          const latitude = parseCoordinate(report.latitude);
+          const longitude = parseCoordinate(report.longitude);
+          if (latitude == null || longitude == null) {
+            return null;
+          }
+          return { ...report, latitude, longitude };
+        })
+        .filter((report): report is ValidReport => Boolean(report)),
     [all]
   );
   const pinned = useMemo(() => mappable.slice(0, 5), [mappable]);
@@ -161,10 +195,7 @@ export default function MapClient() {
     })();
   }, []);
 
-  const center = useMemo<[number, number]>(() => {
-    // Default to Singapore
-    return [1.3521, 103.8198];
-  }, []);
+  const center = useMemo<[number, number]>(() => [0, 0], []);
   const latestPoints = useMemo(
     () => pinned.map((report) => [report.latitude, report.longitude]) as [number, number][],
     [pinned]
@@ -197,7 +228,7 @@ export default function MapClient() {
               Newest report is missing coordinates and can't be pinned yet.
             </p>
           ) : null}
-          <MapContainer center={center} zoom={12} className="leafletMap" style={{ height: "100%", width: "100%" }}>
+          <MapContainer center={center} zoom={2} className="leafletMap" style={{ height: "100%", width: "100%" }}>
             <TileLayer
               attribution='&copy; OpenStreetMap contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -211,44 +242,47 @@ export default function MapClient() {
                   position={[r.latitude, r.longitude]}
                   icon={(isLatest ? markerIcons?.latest : markerIcons?.default) ?? undefined}
                 >
-                <Popup>
-                  {(() => {
+                  <Popup>
+                    {(() => {
                     const reportedAt = formatReportedAt(r);
-                    const coords = formatCoords(r);
+                    const address = formatAddress(r);
+                    const coordinates = formatCoordinates(r);
+                    const locationDescription = resolveLocationDescription(r);
                     return (
                       <div style={{ minWidth: 220 }}>
-                        {isLatest ? (
-                          <div style={{ marginBottom: 6 }}>
-                            <span
-                              style={{
-                                display: "inline-block",
-                                padding: "2px 8px",
-                                borderRadius: 999,
-                                background: "#f7d26a",
-                                color: "#5d3b00",
-                                fontWeight: 700,
-                                fontSize: 11,
-                                letterSpacing: 0.4,
-                              }}
-                            >
-                              Latest report
-                            </span>
-                          </div>
-                        ) : null}
+                          {isLatest ? (
+                            <div style={{ marginBottom: 6 }}>
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  padding: "2px 8px",
+                                  borderRadius: 999,
+                                  background: "#f7d26a",
+                                  color: "#5d3b00",
+                                  fontWeight: 700,
+                                  fontSize: 11,
+                                  letterSpacing: 0.4,
+                                }}
+                              >
+                                Latest report
+                              </span>
+                            </div>
+                          ) : null}
                         <strong>{r.species}</strong> — {r.condition}
                         {r.description ? <div style={{ marginTop: 6 }}>{r.description}</div> : null}
-                        {r.locationDescription ? (
-                          <div style={{ marginTop: 6, opacity: 0.8 }}>{r.locationDescription}</div>
+                        {locationDescription ? (
+                          <div style={{ marginTop: 6, opacity: 0.8 }}>{locationDescription}</div>
                         ) : null}
-                        <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75, lineHeight: 1.4 }}>
-                          {reportedAt ? <div>Reported: {reportedAt}</div> : null}
-                          {coords ? <div>Coords: {coords}</div> : null}
-                          <div>Nearest area: {nearestAreaLabel(r)}</div>
+                          <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75, lineHeight: 1.4 }}>
+                            {reportedAt ? <div>Reported: {reportedAt}</div> : null}
+                            <div>Address: {address ?? "Address pending"}</div>
+                            {coordinates ? <div>Coordinates: {coordinates}</div> : null}
+                            <div>Nearest area: {nearestAreaLabel(r)}</div>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })()}
-                </Popup>
+                      );
+                    })()}
+                  </Popup>
                 </Marker>
               );
             })}
@@ -260,14 +294,18 @@ export default function MapClient() {
           <ul className="list">
             {list.map((r, idx) => {
               const reportedAt = formatReportedAt(r);
-              const coords = formatCoords(r);
-              const meta = coords ? `${coords}${reportedAt ? ` · ${reportedAt}` : ""}` : "Location pending";
+              const address = formatAddress(r);
+              const coordinates = formatCoordinates(r);
               return (
                 <li key={(r.id ?? `list-${idx}`).toString()} className="listItem">
-                  <strong>{r.species}</strong> · {r.condition}
-                  {r.locationDescription ? ` · ${r.locationDescription}` : ""}
-                  {" · "}
-                  {meta}
+                  <div>
+                    <strong>{r.species}</strong> · {r.condition}
+                  </div>
+                  <div style={{ marginTop: 4, fontSize: 12, opacity: 0.7 }}>
+                    {address ?? "Address pending"}
+                    {reportedAt ? ` · ${reportedAt}` : ""}
+                    {coordinates ? ` · ${coordinates}` : ""}
+                  </div>
                 </li>
               );
             })}

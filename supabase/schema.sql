@@ -9,6 +9,9 @@ create table if not exists public.reports (
   location_description text not null,
   latitude double precision,
   longitude double precision,
+  address text,
+  address_source text,
+  geocoded_at timestamp with time zone,
   reporter_contact text,
   status text not null default 'Reported'
 );
