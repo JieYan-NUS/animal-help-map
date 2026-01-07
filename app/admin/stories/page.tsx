@@ -178,14 +178,16 @@ export default async function AdminStoriesPage({
                     const photos = photosByStoryId[story.id];
                     const before =
                       photos.find((photo) => photo.photo_type === "before") ??
-                      photos[0];
+                      null;
                     const after =
                       photos.find((photo) => photo.photo_type === "after") ??
                       null;
+                    const fallbackPhoto = photos[0] ?? null;
+                    const hasPhotoPair = Boolean(before && after);
 
                     return (
                       <>
-                        {before ? (
+                        {hasPhotoPair && before ? (
                           <div className="admin-story-thumb" key={before.path}>
                             <img
                               alt={`${story.title} before`}
@@ -195,7 +197,7 @@ export default async function AdminStoriesPage({
                             <span className="admin-story-thumb-tag">Before</span>
                           </div>
                         ) : null}
-                        {after ? (
+                        {hasPhotoPair && after ? (
                           <div className="admin-story-thumb" key={after.path}>
                             <img
                               alt={`${story.title} after`}
@@ -203,6 +205,19 @@ export default async function AdminStoriesPage({
                               src={after.publicUrl}
                             />
                             <span className="admin-story-thumb-tag">After</span>
+                          </div>
+                        ) : null}
+                        {!hasPhotoPair && fallbackPhoto ? (
+                          <div
+                            className="admin-story-thumb"
+                            key={fallbackPhoto.path}
+                          >
+                            <img
+                              alt={`${story.title} before`}
+                              loading="lazy"
+                              src={fallbackPhoto.publicUrl}
+                            />
+                            <span className="admin-story-thumb-tag">Before</span>
                           </div>
                         ) : null}
                       </>

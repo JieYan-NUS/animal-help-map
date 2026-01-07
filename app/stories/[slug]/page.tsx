@@ -53,14 +53,17 @@ story_photos ( path, sort_order, photo_type )
   const story = data as StoryDetail;
   const photos = story.story_photos ?? [];
   const beforePhoto =
-    photos.find((photo) => photo.photo_type === "before") ?? photos[0] ?? null;
+    photos.find((photo) => photo.photo_type === "before") ?? null;
   const afterPhoto =
     photos.find((photo) => photo.photo_type === "after") ?? null;
-  const hasBeforePhoto = Boolean(beforePhoto);
-  const beforeImage = beforePhoto
-    ? getStoryPhotoUrl(beforePhoto.path)
-    : "/stories/placeholder-1.svg";
-  const afterImage = afterPhoto?.path ? getStoryPhotoUrl(afterPhoto.path) : null;
+  const fallbackPhoto = photos[0] ?? null;
+  const hasPhotoPair = Boolean(beforePhoto && afterPhoto);
+  const beforeImage = hasPhotoPair
+    ? getStoryPhotoUrl(beforePhoto!.path)
+    : fallbackPhoto
+      ? getStoryPhotoUrl(fallbackPhoto.path)
+      : "/stories/placeholder-1.svg";
+  const afterImage = hasPhotoPair ? getStoryPhotoUrl(afterPhoto!.path) : null;
 
   return (
     <>
@@ -79,7 +82,7 @@ story_photos ( path, sort_order, photo_type )
         </div>
       </header>
 
-      {hasBeforePhoto && afterImage ? (
+      {hasPhotoPair && afterImage ? (
         <BeforeAfterSlider
           className="story-hero"
           beforeSrc={beforeImage}

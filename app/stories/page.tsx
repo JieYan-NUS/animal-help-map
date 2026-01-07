@@ -65,27 +65,27 @@ export default async function StoriesPage() {
           {stories.map((story) => {
             const photos = story.story_photos ?? [];
             const beforePhoto =
-              photos.find((photo) => photo.photo_type === "before") ??
-              photos[0] ??
-              null;
+              photos.find((photo) => photo.photo_type === "before") ?? null;
             const afterPhoto =
               photos.find((photo) => photo.photo_type === "after") ?? null;
-            const hasBeforePhoto = Boolean(beforePhoto);
-            const beforeImage = beforePhoto
-              ? getStoryPhotoUrl(beforePhoto.path)
-              : "/stories/placeholder-1.svg";
-            const afterImage = afterPhoto?.path
-              ? getStoryPhotoUrl(afterPhoto.path)
+            const fallbackPhoto = photos[0] ?? null;
+            const hasPhotoPair = Boolean(beforePhoto && afterPhoto);
+            const beforeImage = hasPhotoPair
+              ? getStoryPhotoUrl(beforePhoto!.path)
+              : fallbackPhoto
+                ? getStoryPhotoUrl(fallbackPhoto.path)
+                : "/stories/placeholder-1.svg";
+            const afterImage = hasPhotoPair
+              ? getStoryPhotoUrl(afterPhoto!.path)
               : null;
-            const hasAfterPhoto = Boolean(afterImage);
 
             return (
               <article className="story-card" key={story.slug}>
-                {hasBeforePhoto && hasAfterPhoto ? (
+                {hasPhotoPair && afterImage ? (
                   <BeforeAfterSlider
                     className="story-card-image"
                     beforeSrc={beforeImage}
-                    afterSrc={afterImage!}
+                    afterSrc={afterImage}
                     beforeAlt={`Before photo for ${story.title}`}
                     afterAlt={`After photo for ${story.title}`}
                   />

@@ -86,11 +86,11 @@ export default async function AdminStoryDetailPage({
     return { ...photo, url: publicData.publicUrl };
   });
   const beforePhoto =
-    photoUrls.find((photo) => photo.photo_type === "before") ??
-    photoUrls[0] ??
-    null;
+    photoUrls.find((photo) => photo.photo_type === "before") ?? null;
   const afterPhoto =
     photoUrls.find((photo) => photo.photo_type === "after") ?? null;
+  const fallbackPhoto = photoUrls[0] ?? null;
+  const hasPhotoPair = Boolean(beforePhoto && afterPhoto);
 
   const updatedMessage =
     searchParams?.updated && statusCopy[searchParams.updated]
@@ -189,13 +189,13 @@ export default async function AdminStoryDetailPage({
       </section>
 
       <section className="admin-photo-grid" aria-label="Story photos">
-        {!beforePhoto && !afterPhoto ? (
+        {!beforePhoto && !afterPhoto && !fallbackPhoto ? (
           <div className="admin-empty">
             <p>No photos attached.</p>
           </div>
         ) : (
           <>
-            {beforePhoto ? (
+            {hasPhotoPair && beforePhoto ? (
               <figure className="admin-photo" key={beforePhoto.path}>
                 <Image
                   src={beforePhoto.url}
@@ -206,7 +206,7 @@ export default async function AdminStoryDetailPage({
                 <figcaption>Before</figcaption>
               </figure>
             ) : null}
-            {afterPhoto ? (
+            {hasPhotoPair && afterPhoto ? (
               <figure className="admin-photo" key={afterPhoto.path}>
                 <Image
                   src={afterPhoto.url}
@@ -215,6 +215,17 @@ export default async function AdminStoryDetailPage({
                   sizes="(max-width: 720px) 100vw, 33vw"
                 />
                 <figcaption>After</figcaption>
+              </figure>
+            ) : null}
+            {!hasPhotoPair && fallbackPhoto ? (
+              <figure className="admin-photo" key={fallbackPhoto.path}>
+                <Image
+                  src={fallbackPhoto.url}
+                  alt={`Before photo for ${story.title}`}
+                  fill
+                  sizes="(max-width: 720px) 100vw, 33vw"
+                />
+                <figcaption>Before</figcaption>
               </figure>
             ) : null}
           </>
