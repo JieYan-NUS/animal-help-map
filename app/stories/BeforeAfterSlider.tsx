@@ -29,8 +29,8 @@ export default function BeforeAfterSlider({
     <div className={`before-after ${className ?? ""}`}>
       <div className="before-after-layer">
         <Image
-          src={beforeSrc}
-          alt={beforeAlt}
+          src={afterSrc}
+          alt={afterAlt}
           fill
           sizes={sizes}
           className="before-after-image"
@@ -42,8 +42,8 @@ export default function BeforeAfterSlider({
         style={{ width: `${value}%` }}
       >
         <Image
-          src={afterSrc}
-          alt={afterAlt}
+          src={beforeSrc}
+          alt={beforeAlt}
           fill
           sizes={sizes}
           className="before-after-image"
@@ -60,7 +60,7 @@ export default function BeforeAfterSlider({
         aria-hidden="true"
       />
       <label className="sr-only" htmlFor={inputId}>
-        Reveal after photo
+        Reveal before and after photos
       </label>
       <input
         id={inputId}
@@ -70,7 +70,7 @@ export default function BeforeAfterSlider({
         max={100}
         value={value}
         onChange={(event) => setValue(Number(event.target.value))}
-        aria-label="Reveal after photo"
+        aria-label="Reveal before and after photos"
       />
     </div>
   );
