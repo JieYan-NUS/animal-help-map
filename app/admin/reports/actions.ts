@@ -91,7 +91,8 @@ export const backfillPendingAddresses = async () => {
         latitude,
         longitude
       });
-      const hasAddress = Boolean(addressText && addressText.trim());
+      const trimmedAddress = addressText?.trim() ?? "";
+      const hasAddress = Boolean(trimmedAddress);
       console.info(
         `Backfill report ${report.id}: ${requestUrl} address=${hasAddress ? "found" : "missing"}`
       );
@@ -99,7 +100,7 @@ export const backfillPendingAddresses = async () => {
         const { error: updateError } = await supabase
           .from("reports")
           .update({
-            address: addressText,
+            address: trimmedAddress,
             address_source: "mapbox",
             geocoded_at: new Date().toISOString()
           })
