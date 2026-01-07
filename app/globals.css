@@ -205,6 +205,19 @@ p {
   background: #a86636;
 }
 
+.button:focus-visible {
+  outline: 2px solid #8a4f25;
+  outline-offset: 2px;
+  box-shadow: 0 6px 16px rgba(94, 58, 31, 0.25);
+}
+
+.button:disabled {
+  background: #d3b8a3;
+  color: #fff;
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
 .preview {
   margin-top: 2rem;
   padding: 1.5rem;
@@ -631,6 +644,41 @@ p {
 .admin-actions {
   display: grid;
   gap: 0.75rem;
+}
+
+.admin-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid #c8b19a;
+  background: transparent;
+  color: #7a4d2c;
+  font-weight: 600;
+  transition: background 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.admin-button:hover {
+  background: #fff1e1;
+  border-color: #c07d47;
+  color: #5f391f;
+}
+
+.admin-button:focus-visible {
+  outline: 2px solid #c07d47;
+  outline-offset: 2px;
+  box-shadow: 0 6px 16px rgba(94, 58, 31, 0.2);
+}
+
+.admin-button.is-active,
+.admin-button[aria-current="page"] {
+  background: #c07d47;
+  color: #fff;
+  border-color: #c07d47;
+  box-shadow: 0 8px 18px rgba(99, 61, 33, 0.25);
 }
 
 .admin-action-buttons {

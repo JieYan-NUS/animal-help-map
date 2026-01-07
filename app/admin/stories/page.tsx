@@ -113,11 +113,26 @@ export default async function AdminStoriesPage({
             Review, publish, or archive community submissions.
           </p>
         </div>
-        <form action={logoutAdmin}>
-          <button className="button button-secondary" type="submit">
-            Log out
-          </button>
-        </form>
+        <div className="admin-action-buttons">
+          <Link className="admin-button" href="/admin">
+            Admin home
+          </Link>
+          <Link
+            aria-current="page"
+            className="admin-button is-active"
+            href="/admin/stories"
+          >
+            Review stories
+          </Link>
+          <Link className="admin-button" href="/admin/reports">
+            Review reports
+          </Link>
+          <form action={logoutAdmin}>
+            <button className="admin-button" type="submit">
+              Log out
+            </button>
+          </form>
+        </div>
       </header>
 
       <nav className="admin-tabs" aria-label="Story status filters">

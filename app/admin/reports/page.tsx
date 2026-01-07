@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isAdminRequest } from "@/lib/admin/auth";
 import { logoutAdmin } from "@/app/admin/actions";
-import { deleteReport } from "@/app/admin/reports/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -71,11 +70,21 @@ export default async function AdminReportsPage({
           </p>
         </div>
         <div className="admin-action-buttons">
-          <Link className="button button-secondary" href="/admin/stories">
+          <Link className="admin-button" href="/admin">
+            Admin home
+          </Link>
+          <Link className="admin-button" href="/admin/stories">
             Review stories
           </Link>
+          <Link
+            aria-current="page"
+            className="admin-button is-active"
+            href="/admin/reports"
+          >
+            Review reports
+          </Link>
           <form action={logoutAdmin}>
-            <button className="button button-secondary" type="submit">
+            <button className="admin-button" type="submit">
               Log out
             </button>
           </form>
@@ -112,6 +121,14 @@ export default async function AdminReportsPage({
               </p>
               <dl className="admin-meta-list">
                 <div>
+                  <dt>Animal type</dt>
+                  <dd>{report.species || "Not provided"}</dd>
+                </div>
+                <div>
+                  <dt>Condition</dt>
+                  <dd>{report.condition || "Not provided"}</dd>
+                </div>
+                <div>
                   <dt>Contact</dt>
                   <dd>{report.reporter_contact || "Not provided"}</dd>
                 </div>
@@ -119,15 +136,16 @@ export default async function AdminReportsPage({
                   <dt>Coordinates</dt>
                   <dd>{formatCoordinates(report)}</dd>
                 </div>
+                <div>
+                  <dt>Status</dt>
+                  <dd>{report.status || "Reported"}</dd>
+                </div>
               </dl>
               <div className="admin-story-footer">
                 <span className="admin-story-slug">{report.id}</span>
-                <form action={deleteReport}>
-                  <input type="hidden" name="reportId" value={report.id} />
-                  <button className="button button-secondary" type="submit">
-                    Delete
-                  </button>
-                </form>
+                <Link className="button" href={`/admin/reports/${report.id}`}>
+                  Review
+                </Link>
               </div>
             </article>
           ))}

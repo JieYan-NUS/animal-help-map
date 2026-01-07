@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@supabase/supabase-js";
 import { isAdminRequest } from "@/lib/admin/auth";
 
 const requireAdmin = () => {
@@ -21,7 +21,21 @@ export const deleteReport = async (formData: FormData) => {
     redirect("/admin/reports");
   }
 
-  const supabase = createSupabaseAdminClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY."
+    );
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  });
   const { error } = await supabase
     .from("reports")
     .delete()
@@ -34,6 +48,7 @@ export const deleteReport = async (formData: FormData) => {
 
   revalidatePath("/");
   revalidatePath("/map");
+  revalidatePath("/report");
 
   redirect("/admin/reports?updated=deleted");
 };
