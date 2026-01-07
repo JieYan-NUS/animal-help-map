@@ -22,7 +22,7 @@ export default function BeforeAfterSlider({
   priority = false,
   sizes = "(max-width: 720px) 100vw, 50vw"
 }: BeforeAfterSliderProps) {
-  const [value, setValue] = useState(50);
+  const [value, setValue] = useState(0);
   const inputId = useId();
 
   return (
@@ -54,6 +54,9 @@ export default function BeforeAfterSlider({
         Before
       </span>
       <span className="before-after-label before-after-label-after">After</span>
+      <span className="before-after-hint" aria-hidden="true">
+        Drag to compare
+      </span>
       <div
         className="before-after-divider"
         style={{ left: `${value}%` }}
