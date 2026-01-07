@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMap } from "react-leaflet";
 import dynamic from "next/dynamic";
+import { formatTime } from "@/lib/formatTime";
 
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
@@ -62,9 +63,11 @@ const hasValidCoordinates = (report: Report): report is ValidReport => {
 const formatReportedAt = (report: Report): string | null => {
   const raw = report.created_at ?? report.reported_at ?? report.reportedAt;
   if (!raw) return null;
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleString();
+  return formatTime(raw, {
+    latitude: report.latitude,
+    longitude: report.longitude,
+    preferSingapore: true
+  });
 };
 
 const resolveLocationDescription = (report: Report): string | null => {
