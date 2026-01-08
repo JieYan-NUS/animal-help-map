@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { sanitizeFileName } from "@/lib/storyUtils";
+import { reverseGeocodeWithMapbox } from "@/lib/geocode";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -49,22 +51,6 @@ const resolvePhotoUpload = async (file: File, reportId: string) => {
   }
 
   return { error: null, path };
-};
-
-const reverseGeocode = async (latitude: number, longitude: number) => {
-  const token = process.env.MAPBOX_API_KEY;
-  if (!token) return null;
-  const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&limit=1`;
-  try {
-    const response = await fetch(endpoint, { cache: "no-store" });
-    if (!response.ok) return null;
-    const data = (await response.json()) as { features?: { place_name?: string }[] };
-    const placeName = data?.features?.[0]?.place_name;
-    return placeName?.trim() ? placeName.trim() : null;
-  } catch (error) {
-    console.error("Report reverse geocode error:", error);
-    return null;
-  }
 };
 
 export async function submitReport(
@@ -159,18 +145,6 @@ export async function submitReport(
     photoPath = uploadResult.path;
   }
 
-  let address: string | null = null;
-  let addressSource: string | null = null;
-  let geocodedAt: string | null = null;
-
-  if (!isLost && Number.isFinite(latitude) && Number.isFinite(longitude)) {
-    address = await reverseGeocode(latitude as number, longitude as number);
-    if (address) {
-      addressSource = "mapbox";
-      geocodedAt = new Date().toISOString();
-    }
-  }
-
   const supabase = createSupabaseClient();
   const expiresAt = isLost
     ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
@@ -186,9 +160,9 @@ export async function submitReport(
       location_description: locationDescription,
       latitude: Number.isFinite(latitude) ? latitude : null,
       longitude: Number.isFinite(longitude) ? longitude : null,
-      address,
-      address_source: addressSource,
-      geocoded_at: geocodedAt,
+      address: null,
+      address_source: null,
+      geocoded_at: null,
       reporter_contact: contact || null,
       status: "Reported",
       last_seen_at: isLost ? lastSeenAt : null,
@@ -204,6 +178,36 @@ export async function submitReport(
       message: `We couldn't save your report. ${error.message}`,
       reportType: isLost ? "lost" : "need_help"
     };
+  }
+
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    try {
+      const { addressText, status, ok } = await reverseGeocodeWithMapbox({
+        latitude: latitude as number,
+        longitude: longitude as number
+      });
+      if (!ok) {
+        console.warn(
+          `Report reverse geocode failed with status ${status ?? "unknown"}.`
+        );
+      }
+      if (addressText) {
+        const supabaseAdmin = createSupabaseAdminClient();
+        const { error: updateError } = await supabaseAdmin
+          .from("reports")
+          .update({
+            address: addressText,
+            address_source: "mapbox",
+            geocoded_at: new Date().toISOString()
+          })
+          .eq("id", reportId);
+        if (updateError) {
+          console.warn("Report address update error:", updateError);
+        }
+      }
+    } catch (error) {
+      console.warn("Report reverse geocode skipped:", error);
+    }
   }
 
   revalidatePath("/map");
