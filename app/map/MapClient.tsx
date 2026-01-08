@@ -20,6 +20,7 @@ let L: any = null;
 
 type Report = {
   id?: string | number;
+  report_type?: "need_help" | "lost" | null;
   species: string;
   condition: string;
   description?: string;
@@ -33,6 +34,10 @@ type Report = {
   created_at?: string;
   reported_at?: string;
   reportedAt?: string;
+  last_seen_at?: string | null;
+  expires_at?: string | null;
+  resolved_at?: string | null;
+  photoUrl?: string | null;
 };
 
 type ValidReport = Report & {
@@ -70,6 +75,15 @@ const formatReportedAt = (report: Report): string | null => {
   });
 };
 
+const formatLastSeenAt = (report: Report): string | null => {
+  if (!report.last_seen_at) return null;
+  return formatTime(report.last_seen_at, {
+    latitude: report.latitude,
+    longitude: report.longitude,
+    preferSingapore: true
+  });
+};
+
 const resolveLocationDescription = (report: Report): string | null => {
   const location = report.locationDescription ?? report.location_description;
   return location?.trim() || null;
@@ -100,7 +114,12 @@ const nearestAreaLabel = (report: Report): string => {
 export default function MapClient() {
   const [reports, setReports] = useState<Report[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [markerIcons, setMarkerIcons] = useState<{ default: any; latest: any } | null>(null);
+  const [markerIcons, setMarkerIcons] = useState<{
+    default: any;
+    latest: any;
+    lost: any;
+    lostLatest: any;
+  } | null>(null);
   const all = useMemo(() => {
     const toTimestamp = (report: Report) => {
       const raw = report.created_at ?? report.reported_at ?? report.reportedAt;
@@ -164,6 +183,30 @@ export default function MapClient() {
         popupAnchor: [0, -70],
       });
 
+      const lostIcon = L.divIcon({
+        className: "lostMarkerIcon",
+        html: `
+          <div style="width:52px;height:68px;display:flex;align-items:center;justify-content:center;">
+            <div style="width:52px;height:68px;background:url('/paw-heart-marker.svg') no-repeat center/contain;filter:hue-rotate(330deg) saturate(1.4) brightness(0.95);"></div>
+          </div>
+        `,
+        iconSize: [52, 68],
+        iconAnchor: [26, 68],
+        popupAnchor: [0, -56],
+      });
+
+      const lostLatestIcon = L.divIcon({
+        className: "lostLatestMarkerIcon",
+        html: `
+          <div style="width:64px;height:84px;display:flex;align-items:center;justify-content:center;">
+            <div style="width:64px;height:84px;background:url('/paw-heart-marker.svg') no-repeat center/contain;filter:hue-rotate(330deg) saturate(1.5) brightness(0.95) drop-shadow(0 0 6px rgba(255,102,102,0.9)) drop-shadow(0 0 14px rgba(255,102,102,0.7));"></div>
+          </div>
+        `,
+        iconSize: [64, 84],
+        iconAnchor: [32, 84],
+        popupAnchor: [0, -70],
+      });
+
       L.Marker.prototype.options.icon = defaultIcon;
       if (L.MarkerClusterGroup?.prototype?.options) {
         L.MarkerClusterGroup.prototype.options.iconCreateFunction = (cluster: any) =>
@@ -181,7 +224,12 @@ export default function MapClient() {
           });
       }
 
-      setMarkerIcons({ default: defaultIcon, latest: latestIcon });
+      setMarkerIcons({
+        default: defaultIcon,
+        latest: latestIcon,
+        lost: lostIcon,
+        lostLatest: lostLatestIcon
+      });
     })();
   }, []);
 
@@ -243,14 +291,26 @@ export default function MapClient() {
                 <Marker
                   key={(r.id ?? idx).toString()}
                   position={[r.latitude, r.longitude]}
-                  icon={(isLatest ? markerIcons?.latest : markerIcons?.default) ?? undefined}
+                  icon={
+                    (
+                      isLatest
+                        ? r.report_type === "lost"
+                          ? markerIcons?.lostLatest
+                          : markerIcons?.latest
+                        : r.report_type === "lost"
+                          ? markerIcons?.lost
+                          : markerIcons?.default
+                    ) ?? undefined
+                  }
                 >
                   <Popup>
                     {(() => {
                     const reportedAt = formatReportedAt(r);
+                    const lastSeenAt = formatLastSeenAt(r);
                     const address = formatAddress(r);
                     const coordinates = formatCoordinates(r);
                     const locationDescription = resolveLocationDescription(r);
+                    const isLost = r.report_type === "lost";
                     return (
                       <div style={{ minWidth: 220 }}>
                           {isLatest ? (
@@ -271,15 +331,48 @@ export default function MapClient() {
                               </span>
                             </div>
                           ) : null}
+                          {isLost ? (
+                            <div style={{ marginBottom: 6 }}>
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  padding: "2px 8px",
+                                  borderRadius: 999,
+                                  background: "#ff6b6b",
+                                  color: "#5a0d0d",
+                                  fontWeight: 700,
+                                  fontSize: 11,
+                                  letterSpacing: 0.4,
+                                }}
+                              >
+                                LOST
+                              </span>
+                            </div>
+                          ) : null}
                         <strong>{r.species}</strong> — {r.condition}
                         {r.description ? <div style={{ marginTop: 6 }}>{r.description}</div> : null}
                         {locationDescription ? (
                           <div style={{ marginTop: 6, opacity: 0.8 }}>{locationDescription}</div>
                         ) : null}
+                        {isLost && r.photoUrl ? (
+                          <div style={{ marginTop: 10 }}>
+                            <img
+                              src={r.photoUrl}
+                              alt={`Lost ${r.species}`}
+                              style={{
+                                width: "100%",
+                                maxWidth: 220,
+                                borderRadius: 10,
+                                border: "1px solid #f1d0d0"
+                              }}
+                            />
+                          </div>
+                        ) : null}
                           <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75, lineHeight: 1.4 }}>
                             {reportedAt ? <div>Reported: {reportedAt}</div> : null}
-                            <div>Address: {address ?? "Address pending"}</div>
-                            {coordinates ? <div>Coordinates: {coordinates}</div> : null}
+                            {isLost && lastSeenAt ? <div>Last seen: {lastSeenAt}</div> : null}
+                            {!isLost ? <div>Address: {address ?? "Address pending"}</div> : null}
+                            {!isLost && coordinates ? <div>Coordinates: {coordinates}</div> : null}
                             <div>Nearest area: {nearestAreaLabel(r)}</div>
                           </div>
                         </div>
@@ -299,15 +392,21 @@ export default function MapClient() {
               const reportedAt = formatReportedAt(r);
               const address = formatAddress(r);
               const coordinates = formatCoordinates(r);
+              const isLost = r.report_type === "lost";
               return (
                 <li key={(r.id ?? `list-${idx}`).toString()} className="listItem">
                   <div>
                     <strong>{r.species}</strong> · {r.condition}
+                    {isLost ? (
+                      <span style={{ marginLeft: 6, color: "#b01212", fontWeight: 700 }}>
+                        LOST
+                      </span>
+                    ) : null}
                   </div>
                   <div style={{ marginTop: 4, fontSize: 12, opacity: 0.7 }}>
-                    {address ?? "Address pending"}
+                    {isLost ? "Approximate area" : address ?? "Address pending"}
                     {reportedAt ? ` · ${reportedAt}` : ""}
-                    {coordinates ? ` · ${coordinates}` : ""}
+                    {!isLost && coordinates ? ` · ${coordinates}` : ""}
                   </div>
                 </li>
               );

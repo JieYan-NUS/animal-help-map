@@ -55,6 +55,33 @@ export const deleteReport = async (formData: FormData) => {
   redirect("/admin/reports?updated=deleted");
 };
 
+export const markReportResolved = async (formData: FormData) => {
+  requireAdmin();
+  const reportId = getReportId(formData);
+  if (!reportId) {
+    redirect("/admin/reports");
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("reports")
+    .update({
+      resolved_at: new Date().toISOString(),
+      status: "Resolved"
+    })
+    .eq("id", reportId);
+
+  if (error) {
+    console.error("Resolve report error:", error);
+    redirect("/admin/reports?updated=error");
+  }
+
+  revalidatePath("/map");
+  revalidatePath("/admin/reports");
+  revalidatePath(`/admin/reports/${reportId}`);
+  redirect("/admin/reports?updated=resolved");
+};
+
 type PendingReportRow = {
   id: string;
   latitude: number | null;

@@ -3,6 +3,7 @@ create extension if not exists "pgcrypto";
 create table if not exists public.reports (
   id uuid primary key default gen_random_uuid(),
   created_at timestamp with time zone default now(),
+  report_type text default 'need_help',
   species text not null,
   condition text not null,
   description text,
@@ -13,5 +14,9 @@ create table if not exists public.reports (
   address_source text,
   geocoded_at timestamp with time zone,
   reporter_contact text,
-  status text not null default 'Reported'
+  status text not null default 'Reported',
+  last_seen_at timestamp with time zone,
+  expires_at timestamp with time zone default (now() + interval '14 days'),
+  resolved_at timestamp with time zone,
+  photo_path text
 );

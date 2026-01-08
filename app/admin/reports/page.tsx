@@ -14,6 +14,7 @@ type AdminReportsPageProps = {
 type ReportRow = {
   id: string;
   created_at: string;
+  report_type: string | null;
   species: string;
   condition: string;
   description: string | null;
@@ -22,11 +23,16 @@ type ReportRow = {
   longitude: number | string | null;
   reporter_contact: string | null;
   status: string | null;
+  last_seen_at: string | null;
+  expires_at: string | null;
+  resolved_at: string | null;
+  photo_path: string | null;
 };
 
 const statusCopy: Record<string, string> = {
   backfilled: "Addresses backfilled.",
   deleted: "Report deleted.",
+  resolved: "Report marked as resolved.",
   error: "We couldn't delete that report. Try again."
 };
 
@@ -35,6 +41,13 @@ const formatCoordinates = (report: ReportRow) => {
     return "Not provided";
   }
   return `${report.latitude}, ${report.longitude}`;
+};
+
+const buildReportPhotoUrl = (path?: string | null) => {
+  if (!path) return null;
+  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!baseUrl) return path;
+  return `${baseUrl}/storage/v1/object/public/report-photos/${path}`;
 };
 
 export default async function AdminReportsPage({
@@ -48,7 +61,7 @@ export default async function AdminReportsPage({
   const { data, error } = await supabase
     .from("reports")
     .select(
-      "id, created_at, species, condition, description, location_description, latitude, longitude, reporter_contact, status"
+      "id, created_at, report_type, species, condition, description, location_description, latitude, longitude, reporter_contact, status, last_seen_at, expires_at, resolved_at, photo_path"
     )
     .order("created_at", { ascending: false });
 
@@ -116,6 +129,9 @@ export default async function AdminReportsPage({
                 <span className="admin-status">
                   {report.status || "Reported"}
                 </span>
+                <span>
+                  {report.report_type === "lost" ? "Lost" : "Need help"}
+                </span>
                 <span>{report.species}</span>
                 <span>{report.condition}</span>
                 <span>{new Date(report.created_at).toLocaleString()}</span>
@@ -128,6 +144,12 @@ export default async function AdminReportsPage({
               </p>
               <dl className="admin-meta-list">
                 <div>
+                  <dt>Report type</dt>
+                  <dd>
+                    {report.report_type === "lost" ? "Lost animal" : "Animal in need"}
+                  </dd>
+                </div>
+                <div>
                   <dt>Animal type</dt>
                   <dd>{report.species || "Not provided"}</dd>
                 </div>
@@ -135,6 +157,16 @@ export default async function AdminReportsPage({
                   <dt>Condition</dt>
                   <dd>{report.condition || "Not provided"}</dd>
                 </div>
+                {report.report_type === "lost" ? (
+                  <div>
+                    <dt>Last seen</dt>
+                    <dd>
+                      {report.last_seen_at
+                        ? new Date(report.last_seen_at).toLocaleString()
+                        : "Not provided"}
+                    </dd>
+                  </div>
+                ) : null}
                 <div>
                   <dt>Contact</dt>
                   <dd>{report.reporter_contact || "Not provided"}</dd>
@@ -143,6 +175,32 @@ export default async function AdminReportsPage({
                   <dt>Coordinates</dt>
                   <dd>{formatCoordinates(report)}</dd>
                 </div>
+                {report.report_type === "lost" ? (
+                  <div>
+                    <dt>Expires</dt>
+                    <dd>
+                      {report.expires_at
+                        ? new Date(report.expires_at).toLocaleString()
+                        : "Not set"}
+                    </dd>
+                  </div>
+                ) : null}
+                {report.report_type === "lost" ? (
+                  <div>
+                    <dt>Resolved</dt>
+                    <dd>
+                      {report.resolved_at
+                        ? new Date(report.resolved_at).toLocaleString()
+                        : "No"}
+                    </dd>
+                  </div>
+                ) : null}
+                {report.report_type === "lost" ? (
+                  <div>
+                    <dt>Photo</dt>
+                    <dd>{buildReportPhotoUrl(report.photo_path) ? "Attached" : "None"}</dd>
+                  </div>
+                ) : null}
                 <div>
                   <dt>Status</dt>
                   <dd>{report.status || "Reported"}</dd>
