@@ -186,9 +186,7 @@ export default function MapClient() {
       const lostIcon = L.divIcon({
         className: "lostMarkerIcon",
         html: `
-          <div style="width:52px;height:68px;display:flex;align-items:center;justify-content:center;">
-            <div style="width:52px;height:68px;background:url('/paw-heart-marker.svg') no-repeat center/contain;filter:hue-rotate(330deg) saturate(1.4) brightness(0.95);"></div>
-          </div>
+          <div class="lost-marker" style="--marker-width:52px;--marker-height:68px;"></div>
         `,
         iconSize: [52, 68],
         iconAnchor: [26, 68],
@@ -198,9 +196,7 @@ export default function MapClient() {
       const lostLatestIcon = L.divIcon({
         className: "lostLatestMarkerIcon",
         html: `
-          <div style="width:64px;height:84px;display:flex;align-items:center;justify-content:center;">
-            <div style="width:64px;height:84px;background:url('/paw-heart-marker.svg') no-repeat center/contain;filter:hue-rotate(330deg) saturate(1.5) brightness(0.95) drop-shadow(0 0 6px rgba(255,102,102,0.9)) drop-shadow(0 0 14px rgba(255,102,102,0.7));"></div>
-          </div>
+          <div class="lost-marker lost-marker--latest" style="--marker-width:64px;--marker-height:84px;"></div>
         `,
         iconSize: [64, 84],
         iconAnchor: [32, 84],
@@ -386,7 +382,7 @@ export default function MapClient() {
         </div>
 
         <aside className="listPanel">
-          <h2 className="listTitle">Latest reports</h2>
+          <h2 className="listTitle">Animals needing help</h2>
           <ul className="list">
             {list.map((r, idx) => {
               const reportedAt = formatReportedAt(r);

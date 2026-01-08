@@ -891,6 +891,50 @@ p {
   overflow: hidden;
 }
 
+.lost-marker {
+  width: var(--marker-width, 52px);
+  height: var(--marker-height, 68px);
+  background: url("/paw-heart-marker.svg") no-repeat center/contain;
+  filter: hue-rotate(330deg) saturate(1.4) brightness(0.95);
+  position: relative;
+}
+
+.lost-marker::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: calc(var(--marker-width, 52px) * 0.9);
+  height: calc(var(--marker-height, 68px) * 0.55);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 86, 122, 0.35) 0%, rgba(255, 86, 122, 0) 70%);
+  transform: translate(-50%, -50%) scale(0.85);
+  opacity: 0.7;
+  z-index: -1;
+  animation: lost-marker-pulse 3.8s ease-in-out infinite;
+}
+
+.lost-marker--latest {
+  filter: hue-rotate(330deg) saturate(1.5) brightness(0.95)
+    drop-shadow(0 0 6px rgba(255, 102, 102, 0.85))
+    drop-shadow(0 0 14px rgba(255, 102, 102, 0.65));
+}
+
+@keyframes lost-marker-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.82);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.25;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.82);
+    opacity: 0.55;
+  }
+}
+
 .map-list {
   max-height: 70vh;
   display: flex;

@@ -34,14 +34,14 @@ const parseOptionalNumber = (value: string) => {
 
 const resolvePhotoUpload = async (file: File, reportId: string) => {
   const safeName = sanitizeFileName(file.name);
-  const extension = safeName.includes(".") ? safeName.split(".").pop() : null;
-  const filename = extension ? `photo.${extension}` : "photo";
+  const timestamp = Date.now();
+  const filename = `${timestamp}-${safeName}`;
   const path = `reports/${reportId}/${filename}`;
 
   const supabase = createSupabaseClient();
   const { error } = await supabase.storage
     .from("report-photos")
-    .upload(path, file, { contentType: file.type, upsert: true });
+    .upload(path, file, { contentType: file.type });
 
   if (error) {
     console.error("Report photo upload error:", error);
