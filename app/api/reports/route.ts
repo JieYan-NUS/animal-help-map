@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import tzLookup from "tz-lookup";
+import { getUtcOffsetMinutes, isValidTimeZone } from "@/lib/timezone";
 
 type ReportRequest = {
   report_type?: "need_help" | "lost";
@@ -25,6 +27,8 @@ type ReportRow = {
   address: string | null;
   address_source: string | null;
   geocoded_at: string | null;
+  report_tz: string | null;
+  report_utc_offset_minutes: number | null;
   reporter_contact: string | null;
   last_seen_at: string | null;
   expires_at: string | null;
@@ -45,6 +49,8 @@ type ReportResponse = {
   address: string | null;
   addressSource: string | null;
   geocodedAt: string | null;
+  report_tz: string | null;
+  report_utc_offset_minutes: number | null;
   contact: string | null;
   last_seen_at: string | null;
   expires_at: string | null;
@@ -70,23 +76,28 @@ const buildReportPhotoUrl = (path?: string | null) => {
 const fetchReverseGeocode = async (
   latitude: number,
   longitude: number
-): Promise<string | null> => {
+): Promise<{ address: string | null }> => {
   const token = process.env.MAPBOX_API_KEY;
-  if (!token) return null;
+  if (!token) return { address: null };
 
   const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&limit=1`;
   try {
     const response = await fetch(endpoint, { cache: "no-store" });
     if (!response.ok) {
       console.error("Mapbox reverse geocode error:", response.status);
-      return null;
+      return { address: null };
     }
-    const data = (await response.json()) as { features?: { place_name?: string }[] };
+    const data = (await response.json()) as {
+      features?: {
+        place_name?: string;
+      }[];
+    };
     const placeName = data?.features?.[0]?.place_name;
-    return placeName?.trim() ? placeName.trim() : null;
+    const address = placeName?.trim() ? placeName.trim() : null;
+    return { address };
   } catch (error) {
     console.error("Mapbox reverse geocode crash:", error);
-    return null;
+    return { address: null };
   }
 };
 
@@ -135,16 +146,26 @@ export async function POST(request: Request) {
     let address: string | null = null;
     let addressSource: string | null = null;
     let geocodedAt: string | null = null;
+    let reportTimeZone: string | null = null;
+    let reportUtcOffsetMinutes: number | null = null;
 
-    if (
-      reportType !== "lost" &&
-      Number.isFinite(latitude) &&
-      Number.isFinite(longitude)
-    ) {
-      address = await fetchReverseGeocode(latitude as number, longitude as number);
-      if (address) {
-        addressSource = "mapbox";
-        geocodedAt = new Date().toISOString();
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      try {
+        const resolved = tzLookup(latitude as number, longitude as number);
+        if (resolved && isValidTimeZone(resolved)) {
+          reportTimeZone = resolved;
+          reportUtcOffsetMinutes = getUtcOffsetMinutes(new Date(), resolved);
+        }
+      } catch (error) {
+        console.warn("Report timezone lookup failed:", error);
+      }
+      const geocodeResult = await fetchReverseGeocode(latitude as number, longitude as number);
+      if (reportType !== "lost") {
+        address = geocodeResult.address;
+        if (address) {
+          addressSource = "mapbox";
+          geocodedAt = new Date().toISOString();
+        }
       }
     }
 
@@ -178,6 +199,8 @@ export async function POST(request: Request) {
         address,
         address_source: addressSource,
         geocoded_at: geocodedAt,
+        report_tz: reportTimeZone,
+        report_utc_offset_minutes: reportUtcOffsetMinutes,
         reporter_contact: body.contact?.trim() || null,
         status: "Reported",
         last_seen_at: lastSeenAt,
@@ -202,7 +225,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("reports")
       .select(
-        "id, created_at, report_type, species, condition, description, location_description, latitude, longitude, address, address_source, geocoded_at, reporter_contact, last_seen_at, expires_at, resolved_at, photo_path"
+        "id, created_at, report_type, species, condition, description, location_description, latitude, longitude, address, address_source, geocoded_at, report_tz, report_utc_offset_minutes, reporter_contact, last_seen_at, expires_at, resolved_at, photo_path"
       )
       .order("created_at", { ascending: false });
 
@@ -228,6 +251,8 @@ export async function GET() {
             address: isLost ? null : report.address ?? null,
             addressSource: isLost ? null : report.address_source ?? null,
             geocodedAt: isLost ? null : report.geocoded_at ?? null,
+            report_tz: report.report_tz ?? null,
+            report_utc_offset_minutes: report.report_utc_offset_minutes ?? null,
             contact: report.reporter_contact ?? null,
             last_seen_at: report.last_seen_at ?? null,
             expires_at: report.expires_at ?? null,

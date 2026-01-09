@@ -5,6 +5,8 @@ type MapboxFeature = {
   properties?: {
     full_address?: string;
     place_formatted?: string;
+    timezone?: string;
+    time_zone?: string;
   };
 };
 
@@ -14,6 +16,7 @@ type MapboxResponse = {
 
 type ReverseGeocodeResult = {
   addressText: string | null;
+  timeZone: string | null;
   requestUrl: string;
   status: number | null;
   ok: boolean;
@@ -35,6 +38,14 @@ const extractAddressFromFeature = (feature?: MapboxFeature) => {
   return null;
 };
 
+const extractTimeZoneFromFeature = (feature?: MapboxFeature) => {
+  const timezone = feature?.properties?.timezone?.trim();
+  if (timezone) return timezone;
+  const timeZoneAlt = feature?.properties?.time_zone?.trim();
+  if (timeZoneAlt) return timeZoneAlt;
+  return null;
+};
+
 export const reverseGeocodeWithMapbox = async ({
   latitude,
   longitude
@@ -52,14 +63,22 @@ export const reverseGeocodeWithMapbox = async ({
   try {
     response = await fetch(requestUrl, { cache: "no-store" });
   } catch {
-    return { addressText: null, requestUrl, status: null, ok: false };
+    return { addressText: null, timeZone: null, requestUrl, status: null, ok: false };
   }
 
   if (!response.ok) {
-    return { addressText: null, requestUrl, status: response.status, ok: false };
+    return {
+      addressText: null,
+      timeZone: null,
+      requestUrl,
+      status: response.status,
+      ok: false
+    };
   }
 
   const data = (await response.json()) as MapboxResponse;
-  const addressText = extractAddressFromFeature(data?.features?.[0]);
-  return { addressText, requestUrl, status: response.status, ok: true };
+  const feature = data?.features?.[0];
+  const addressText = extractAddressFromFeature(feature);
+  const timeZone = extractTimeZoneFromFeature(feature);
+  return { addressText, timeZone, requestUrl, status: response.status, ok: true };
 };

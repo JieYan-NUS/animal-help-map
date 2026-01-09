@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMap } from "react-leaflet";
 import dynamic from "next/dynamic";
-import { formatTime } from "@/lib/formatTime";
+import { derivePlaceLabel, formatReportTimestamp } from "@/lib/reportTime";
 
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
@@ -31,6 +31,8 @@ type Report = {
   address?: string | null;
   addressSource?: string | null;
   geocodedAt?: string | null;
+  report_tz?: string | null;
+  report_utc_offset_minutes?: number | null;
   created_at?: string;
   reported_at?: string;
   reportedAt?: string;
@@ -65,22 +67,27 @@ const hasValidCoordinates = (report: Report): report is ValidReport => {
   return latitude != null && longitude != null;
 };
 
-const formatReportedAt = (report: Report): string | null => {
+const formatReportedAt = (report: Report) => {
   const raw = report.created_at ?? report.reported_at ?? report.reportedAt;
   if (!raw) return null;
-  return formatTime(raw, {
-    latitude: report.latitude,
-    longitude: report.longitude,
-    preferSingapore: true
+  const placeLabel = derivePlaceLabel(report.address, resolveLocationDescription(report));
+  return formatReportTimestamp({
+    timestamp: raw,
+    timeZone: report.report_tz,
+    utcOffsetMinutes: report.report_utc_offset_minutes ?? null,
+    placeLabel,
+    label: "Reported"
   });
 };
 
-const formatLastSeenAt = (report: Report): string | null => {
+const formatLastSeenAt = (report: Report) => {
   if (!report.last_seen_at) return null;
-  return formatTime(report.last_seen_at, {
-    latitude: report.latitude,
-    longitude: report.longitude,
-    preferSingapore: true
+  const placeLabel = derivePlaceLabel(report.address, resolveLocationDescription(report));
+  return formatReportTimestamp({
+    timestamp: report.last_seen_at,
+    timeZone: report.report_tz,
+    placeLabel,
+    label: "Last seen"
   });
 };
 
@@ -365,8 +372,16 @@ export default function MapClient() {
                           </div>
                         ) : null}
                           <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75, lineHeight: 1.4 }}>
-                            {reportedAt ? <div>Reported: {reportedAt}</div> : null}
-                            {isLost && lastSeenAt ? <div>Last seen: {lastSeenAt}</div> : null}
+                            {reportedAt ? (
+                              <>
+                                <div>{reportedAt.reportedLabel}</div>
+                              </>
+                            ) : null}
+                            {isLost && lastSeenAt ? (
+                              <>
+                                <div>{lastSeenAt.reportedLabel}</div>
+                              </>
+                            ) : null}
                             {!isLost ? <div>Address: {address ?? "Address pending"}</div> : null}
                             {!isLost && coordinates ? <div>Coordinates: {coordinates}</div> : null}
                             <div>Nearest area: {nearestAreaLabel(r)}</div>
@@ -399,10 +414,14 @@ export default function MapClient() {
                       </span>
                     ) : null}
                   </div>
-                  <div style={{ marginTop: 4, fontSize: 12, opacity: 0.7 }}>
-                    {isLost ? "Approximate area" : address ?? "Address pending"}
-                    {reportedAt ? ` · ${reportedAt}` : ""}
-                    {!isLost && coordinates ? ` · ${coordinates}` : ""}
+                  <div style={{ marginTop: 4, fontSize: 12, opacity: 0.7, lineHeight: 1.4 }}>
+                    <div>{isLost ? "Approximate area" : address ?? "Address pending"}</div>
+                    {reportedAt ? (
+                      <>
+                        <div>{reportedAt.reportedLabel}</div>
+                      </>
+                    ) : null}
+                    {!isLost && coordinates ? <div>{coordinates}</div> : null}
                   </div>
                 </li>
               );

@@ -5,6 +5,8 @@ import { createSupabaseClient } from "@/lib/supabaseClient";
 import { sanitizeFileName } from "@/lib/storyUtils";
 import { reverseGeocodeWithMapbox } from "@/lib/geocode";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import tzLookup from "tz-lookup";
+import { getUtcOffsetMinutes, isValidTimeZone } from "@/lib/timezone";
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -149,6 +151,21 @@ export async function submitReport(
   const expiresAt = isLost
     ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
     : null;
+  const reportTimestamp = new Date();
+  let reportTimeZone: string | null = null;
+  let reportUtcOffsetMinutes: number | null = null;
+
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    try {
+      const resolved = tzLookup(latitude as number, longitude as number);
+      if (resolved && isValidTimeZone(resolved)) {
+        reportTimeZone = resolved;
+        reportUtcOffsetMinutes = getUtcOffsetMinutes(reportTimestamp, resolved);
+      }
+    } catch (error) {
+      console.warn("Report timezone lookup failed:", error);
+    }
+  }
 
   const { error } = await supabase.from("reports").insert([
     {
@@ -163,6 +180,8 @@ export async function submitReport(
       address: null,
       address_source: null,
       geocoded_at: null,
+      report_tz: reportTimeZone,
+      report_utc_offset_minutes: reportUtcOffsetMinutes,
       reporter_contact: contact || null,
       status: "Reported",
       last_seen_at: isLost ? lastSeenAt : null,
@@ -191,18 +210,20 @@ export async function submitReport(
           `Report reverse geocode failed with status ${status ?? "unknown"}.`
         );
       }
+      const updatePayload: Record<string, string | null> = {};
       if (addressText) {
+        updatePayload.address = addressText;
+        updatePayload.address_source = "mapbox";
+        updatePayload.geocoded_at = new Date().toISOString();
+      }
+      if (Object.keys(updatePayload).length > 0) {
         const supabaseAdmin = createSupabaseAdminClient();
         const { error: updateError } = await supabaseAdmin
           .from("reports")
-          .update({
-            address: addressText,
-            address_source: "mapbox",
-            geocoded_at: new Date().toISOString()
-          })
+          .update(updatePayload)
           .eq("id", reportId);
         if (updateError) {
-          console.warn("Report address update error:", updateError);
+          console.warn("Report enrichment update error:", updateError);
         }
       }
     } catch (error) {

@@ -13,6 +13,8 @@ create table if not exists public.reports (
   address text,
   address_source text,
   geocoded_at timestamp with time zone,
+  report_tz text,
+  report_utc_offset_minutes integer,
   reporter_contact text,
   status text not null default 'Reported',
   last_seen_at timestamp with time zone,
