@@ -430,12 +430,12 @@ export const translations: TranslationMap = {
     "stories.beforeAltPrefix": "之前照片：",
     "stories.afterAltPrefix": "之后照片：",
     "home.heroSubtitle":
-      "身边需要帮助的动物，由社区守护。提交简短报告或查看地图，看看附近是否已有响应。",
+      "为身边需要帮助的动物筑起一道社区守护之盾。提交一条简要报告，或查看地图，看看是否已有附近的人在用心伸出援手。",
     "home.reportCta": "提交动物报告",
     "home.mapCta": "查看地图",
     "home.sectionTitle": "动物救助地图",
     "home.sectionBody":
-      "一个温柔的空间，让人们与需要帮助的动物建立连接。分享报告或寻找附近的帮助。",
+      "一个温柔的空间，连接需要帮助的人与动物。提交一条求助，或在附近寻找带着关怀与尊重的援手。",
     "home.disclaimerEmergency":
       "本网站不是紧急救助服务。如遇动物处于紧急危险，请联系当地主管部门或紧急兽医服务。",
     "home.disclaimerCredit":
