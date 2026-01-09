@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getServerLocale, t } from "@/lib/i18n";
 
 export default function HomePage() {
+  const locale = getServerLocale();
   return (
     <>
       <section className="hero">
@@ -19,33 +21,27 @@ export default function HomePage() {
         <div className="hero-content heroContent">
           <h1>Pawscue</h1>
           <p className="hero-subtitle">
-            A community shield for animals in need, nearby. Share a quick
-            report or check the map to see if someone nearby is already
-            responding with care.
+            {t(locale, "home.heroSubtitle")}
           </p>
           <div className="hero-actions">
             <Link className="button" href="/report">
-              Report an animal
+              {t(locale, "home.reportCta")}
             </Link>
             <Link className="button button-secondary" href="/map">
-              Check the map
+              {t(locale, "home.mapCta")}
             </Link>
           </div>
         </div>
       </section>
-      <h2>Animal Help Map</h2>
+      <h2>{t(locale, "home.sectionTitle")}</h2>
       <p>
-        A gentle place to connect people and animals in need. Share a report or
-        look for nearby help with care and respect.
+        {t(locale, "home.sectionBody")}
       </p>
       <p className="disclaimer">
-        This site is not an emergency service. If an animal is in immediate
-        danger, please contact local authorities or emergency veterinary
-        services.
+        {t(locale, "home.disclaimerEmergency")}
       </p>
       <p className="disclaimer">
-        Designed and built by Yifan Yan, with family collaboration, for the
-        care and protection of animals in need.
+        {t(locale, "home.disclaimerCredit")}
       </p>
       <footer
         style={{
@@ -55,11 +51,11 @@ export default function HomePage() {
           textAlign: "center",
         }}
       >
-        Open-source project licensed under{" "}
+        {t(locale, "home.footerLead")}
         <Link href="https://www.gnu.org/licenses/agpl-3.0.html">
           GNU AGPL-3.0
         </Link>
-        . Built for community care and transparency.
+        {t(locale, "home.footerTail")}
       </footer>
     </>
   );

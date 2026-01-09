@@ -2,6 +2,7 @@
 
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { createStorySlug, sanitizeFileName } from "@/lib/storyUtils";
+import { isLocale, t } from "@/lib/i18n";
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -25,6 +26,8 @@ export async function submitStory(
   _prevState: StoryFormState,
   formData: FormData
 ): Promise<StoryFormState> {
+  const localeInput = getString(formData, "locale");
+  const locale = isLocale(localeInput) ? localeInput : "en";
   const fieldErrors: Record<string, string> = {};
 
   const title = getString(formData, "title");
@@ -37,22 +40,22 @@ export async function submitStory(
   const authorContact = getString(formData, "author_contact");
   const consent = formData.get("consent");
 
-  if (!title) fieldErrors.title = "Title is required.";
-  if (!animalType) fieldErrors.animal_type = "Animal type is required.";
-  if (!city) fieldErrors.city = "City is required.";
-  if (!monthYear) fieldErrors.month_year = "Month and year are required.";
-  if (!excerpt) fieldErrors.excerpt = "Excerpt is required.";
-  if (!content) fieldErrors.content = "Story content is required.";
+  if (!title) fieldErrors.title = t(locale, "stories.error.titleRequired");
+  if (!animalType) fieldErrors.animal_type = t(locale, "stories.error.animalTypeRequired");
+  if (!city) fieldErrors.city = t(locale, "stories.error.cityRequired");
+  if (!monthYear) fieldErrors.month_year = t(locale, "stories.error.monthYearRequired");
+  if (!excerpt) fieldErrors.excerpt = t(locale, "stories.error.excerptRequired");
+  if (!content) fieldErrors.content = t(locale, "stories.error.contentRequired");
   if (excerpt.length > 140) {
-    fieldErrors.excerpt = "Excerpt must be 140 characters or less.";
+    fieldErrors.excerpt = t(locale, "stories.error.excerptTooLong");
   }
   if (!consent) {
-    fieldErrors.consent = "Consent is required to submit a story.";
+    fieldErrors.consent = t(locale, "stories.error.consentRequired");
   }
 
   const allowedAnimalTypes = new Set(["cat", "dog", "bird", "other"]);
   if (animalType && !allowedAnimalTypes.has(animalType)) {
-    fieldErrors.animal_type = "Please choose a valid animal type.";
+    fieldErrors.animal_type = t(locale, "stories.error.animalTypeInvalid");
   }
 
   const beforePhoto = formData.get("before_photo");
@@ -61,46 +64,35 @@ export async function submitStory(
   const validatePhoto = (
     file: unknown,
     field: string,
-    required: boolean,
-    label: string
+    required: boolean
   ) => {
     if (!(file instanceof File) || file.size === 0) {
       if (required) {
-        fieldErrors[field] = `${label} is required.`;
+        fieldErrors[field] = t(locale, "stories.error.beforePhotoRequired");
       }
       return null;
     }
 
     if (!ALLOWED_MIME_TYPES.has(file.type)) {
-      fieldErrors[field] = `Only JPG, PNG, or WebP images are allowed for the ${label.toLowerCase()}.`;
+      fieldErrors[field] = t(locale, "stories.error.photoType");
       return null;
     }
 
     if (file.size > MAX_FILE_BYTES) {
-      fieldErrors[field] = `${label} must be 5MB or smaller.`;
+      fieldErrors[field] = t(locale, "stories.error.photoSize");
       return null;
     }
 
     return file;
   };
 
-  const beforeFile = validatePhoto(
-    beforePhoto,
-    "before_photo",
-    true,
-    "Before photo"
-  );
-  const afterFile = validatePhoto(
-    afterPhoto,
-    "after_photo",
-    false,
-    "After photo"
-  );
+  const beforeFile = validatePhoto(beforePhoto, "before_photo", true);
+  const afterFile = validatePhoto(afterPhoto, "after_photo", false);
 
   if (Object.keys(fieldErrors).length > 0) {
     return {
       status: "error",
-      message: "Please fix the highlighted fields and try again.",
+      message: t(locale, "stories.error.fixFields"),
       fieldErrors
     };
   }
@@ -139,7 +131,7 @@ export async function submitStory(
       : "Unknown error";
     return {
       status: "error",
-      message: `We could not save your story. ${errorMessage}`
+      message: `${t(locale, "stories.error.saveFailed")} ${errorMessage}`
     };
   }
 
@@ -166,7 +158,7 @@ export async function submitStory(
         : "Unknown error";
       return {
         status: "error" as const,
-        message: `We saved your story, but uploading a photo failed. ${errorMessage}`
+        message: `${t(locale, "stories.error.photoUploadFailed")} ${errorMessage}`
       };
     }
 
@@ -201,7 +193,7 @@ export async function submitStory(
         : "Unknown error";
       return {
         status: "error",
-        message: `We saved your story, but attaching photos failed. ${errorMessage}`
+        message: `${t(locale, "stories.error.photoAttachFailed")} ${errorMessage}`
       };
     }
   }
@@ -210,6 +202,6 @@ export async function submitStory(
 
   return {
     status: "success",
-    message: "Thanks! Your story is submitted and pending review."
+    message: t(locale, "stories.success.submitted")
   };
 }

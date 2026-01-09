@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import LanguageToggle from "@/components/LanguageToggle";
+import { getServerLocale, t } from "@/lib/i18n";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,14 +15,18 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const locale = getServerLocale();
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body>
         <nav>
-          <Link href="/">Home</Link>
-          <Link href="/report">Report</Link>
-          <Link href="/map">Map</Link>
-          <Link href="/stories">Stories</Link>
+          <Link href="/">{t(locale, "nav.home")}</Link>
+          <Link href="/report">{t(locale, "nav.report")}</Link>
+          <Link href="/map">{t(locale, "nav.map")}</Link>
+          <Link href="/stories">{t(locale, "nav.stories")}</Link>
+          <div style={{ marginLeft: "auto" }}>
+            <LanguageToggle currentLocale={locale} />
+          </div>
         </nav>
         <main>{children}</main>
       </body>

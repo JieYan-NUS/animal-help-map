@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMap } from "react-leaflet";
 import dynamic from "next/dynamic";
 import { derivePlaceLabel, formatReportTimestamp } from "@/lib/reportTime";
+import { t, type Locale } from "@/lib/i18n";
 
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
@@ -21,6 +22,7 @@ let L: any = null;
 type Report = {
   id?: string | number;
   report_type?: "need_help" | "lost" | null;
+  status?: string | null;
   species: string;
   condition: string;
   description?: string;
@@ -39,6 +41,7 @@ type Report = {
   last_seen_at?: string | null;
   expires_at?: string | null;
   resolved_at?: string | null;
+  lost_case_id?: string | null;
   photoUrl?: string | null;
 };
 
@@ -67,7 +70,7 @@ const hasValidCoordinates = (report: Report): report is ValidReport => {
   return latitude != null && longitude != null;
 };
 
-const formatReportedAt = (report: Report) => {
+const formatReportedAt = (report: Report, locale: Locale) => {
   const raw = report.created_at ?? report.reported_at ?? report.reportedAt;
   if (!raw) return null;
   const placeLabel = derivePlaceLabel(report.address, resolveLocationDescription(report));
@@ -76,18 +79,18 @@ const formatReportedAt = (report: Report) => {
     timeZone: report.report_tz,
     utcOffsetMinutes: report.report_utc_offset_minutes ?? null,
     placeLabel,
-    label: "Reported"
+    label: t(locale, "map.reported")
   });
 };
 
-const formatLastSeenAt = (report: Report) => {
+const formatLastSeenAt = (report: Report, locale: Locale) => {
   if (!report.last_seen_at) return null;
   const placeLabel = derivePlaceLabel(report.address, resolveLocationDescription(report));
   return formatReportTimestamp({
     timestamp: report.last_seen_at,
     timeZone: report.report_tz,
     placeLabel,
-    label: "Last seen"
+    label: t(locale, "map.lastSeen")
   });
 };
 
@@ -109,6 +112,11 @@ const formatCoordinates = (report: Report): string | null => {
   return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
 };
 
+const formatLostCaseId = (report: Report): string | null => {
+  const value = report.lost_case_id?.trim();
+  return value ? value : null;
+};
+
 const nearestAreaLabel = (report: Report): string => {
   const location = resolveLocationDescription(report);
   if (location) return location;
@@ -118,7 +126,33 @@ const nearestAreaLabel = (report: Report): string => {
   return "Area pending";
 };
 
-export default function MapClient() {
+const resolveStatusBadge = (report: Report, locale: Locale) => {
+  const status = report.status ?? "Reported";
+  if (status === "Found" || status === "Resolved") {
+    return {
+      label: t(locale, "report.status.found"),
+      style: { background: "#cfead6", color: "#165a2a" }
+    };
+  }
+  if (status === "Cancelled") {
+    return {
+      label: t(locale, "map.cancelledBadge"),
+      style: { background: "#e9e9e9", color: "#4d4d4d" }
+    };
+  }
+  if (report.report_type === "lost") {
+    return {
+      label: t(locale, "map.lostBadge"),
+      style: { background: "#ff6b6b", color: "#5a0d0d" }
+    };
+  }
+  return {
+    label: t(locale, "map.needHelpBadge"),
+    style: { background: "#8ec5ff", color: "#0b3a63" }
+  };
+};
+
+export default function MapClient({ locale }: { locale: Locale }) {
   const [reports, setReports] = useState<Report[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [markerIcons, setMarkerIcons] = useState<{
@@ -127,6 +161,10 @@ export default function MapClient() {
     lost: any;
     lostLatest: any;
   } | null>(null);
+  const activeReports = useMemo(
+    () => reports.filter((report) => report.status === "Reported"),
+    [reports]
+  );
   const all = useMemo(() => {
     const toTimestamp = (report: Report) => {
       const raw = report.created_at ?? report.reported_at ?? report.reportedAt;
@@ -142,8 +180,8 @@ export default function MapClient() {
       return 0;
     };
 
-    return reports.slice().sort((a, b) => toTimestamp(b) - toTimestamp(a));
-  }, [reports]);
+    return activeReports.slice().sort((a, b) => toTimestamp(b) - toTimestamp(a));
+  }, [activeReports]);
 
   const mappable = useMemo(
     () =>
@@ -244,10 +282,10 @@ export default function MapClient() {
         const data = await res.json();
         setReports(Array.isArray(data) ? data : data?.reports ?? []);
       } catch (e: any) {
-        setError(e?.message ?? "Failed to load reports");
+        setError(e?.message ?? t(locale, "map.loadError"));
       }
     })();
-  }, []);
+  }, [locale]);
 
   const center = useMemo<[number, number]>(() => [0, 0], []);
   const latestPoints = useMemo(
@@ -255,12 +293,13 @@ export default function MapClient() {
     [pinned]
   );
   const newestMissingCoords = all[0] ? !hasValidCoordinates(all[0]) : false;
+  const hasActiveReports = activeReports.length > 0;
 
   return (
     <main className="page">
-      <h1 className="title">Animals on the Map</h1>
+      <h1 className="title">{t(locale, "map.title")}</h1>
       <p className="subtitle">
-        Reports appear as pins so you can see where help is needed and share with nearby helpers.
+        {t(locale, "map.subtitle")}
       </p>
 
       {error && <p className="errorText">{error}</p>}
@@ -276,10 +315,10 @@ export default function MapClient() {
                 border: "1px dashed #eadbc8",
                 borderRadius: 10,
                 fontSize: "0.9rem",
-                color: "#6b4b2a",
+                color: "#6b4b2a"
               }}
             >
-              Newest report is missing coordinates and can't be pinned yet.
+              {t(locale, "map.newestMissingCoords")}
             </p>
           ) : null}
           <MapContainer center={center} zoom={2} className="leafletMap" style={{ height: "100%", width: "100%" }}>
@@ -308,12 +347,14 @@ export default function MapClient() {
                 >
                   <Popup>
                     {(() => {
-                    const reportedAt = formatReportedAt(r);
-                    const lastSeenAt = formatLastSeenAt(r);
+                    const reportedAt = formatReportedAt(r, locale);
+                    const lastSeenAt = formatLastSeenAt(r, locale);
                     const address = formatAddress(r);
                     const coordinates = formatCoordinates(r);
                     const locationDescription = resolveLocationDescription(r);
                     const isLost = r.report_type === "lost";
+                    const statusBadge = resolveStatusBadge(r, locale);
+                    const lostCaseId = formatLostCaseId(r);
                     return (
                       <div style={{ minWidth: 220 }}>
                           {isLatest ? (
@@ -330,30 +371,34 @@ export default function MapClient() {
                                   letterSpacing: 0.4,
                                 }}
                               >
-                                Latest report
+                                {t(locale, "map.latestBadge")}
                               </span>
                             </div>
                           ) : null}
-                          {isLost ? (
+                          {statusBadge ? (
                             <div style={{ marginBottom: 6 }}>
                               <span
                                 style={{
                                   display: "inline-block",
                                   padding: "2px 8px",
                                   borderRadius: 999,
-                                  background: "#ff6b6b",
-                                  color: "#5a0d0d",
+                                  ...statusBadge.style,
                                   fontWeight: 700,
                                   fontSize: 11,
-                                  letterSpacing: 0.4,
+                                  letterSpacing: 0.4
                                 }}
                               >
-                                LOST
+                                {statusBadge.label}
                               </span>
                             </div>
                           ) : null}
                         <strong>{r.species}</strong> — {r.condition}
                         {r.description ? <div style={{ marginTop: 6 }}>{r.description}</div> : null}
+                        {isLost && lostCaseId ? (
+                          <div style={{ marginTop: 6, fontWeight: 600 }}>
+                            {t(locale, "report.lostCase.label")}: {lostCaseId}
+                          </div>
+                        ) : null}
                         {locationDescription ? (
                           <div style={{ marginTop: 6, opacity: 0.8 }}>{locationDescription}</div>
                         ) : null}
@@ -361,7 +406,7 @@ export default function MapClient() {
                           <div style={{ marginTop: 10 }}>
                             <img
                               src={r.photoUrl}
-                              alt={`Lost ${r.species}`}
+                              alt={`${t(locale, "map.lostPhotoAltPrefix")}${r.species}`}
                               style={{
                                 width: "100%",
                                 maxWidth: 220,
@@ -382,9 +427,19 @@ export default function MapClient() {
                                 <div>{lastSeenAt.reportedLabel}</div>
                               </>
                             ) : null}
-                            {!isLost ? <div>Address: {address ?? "Address pending"}</div> : null}
-                            {!isLost && coordinates ? <div>Coordinates: {coordinates}</div> : null}
-                            <div>Nearest area: {nearestAreaLabel(r)}</div>
+                            {!isLost ? (
+                              <div>
+                                {t(locale, "map.addressLabel")}: {address ?? t(locale, "map.addressPending")}
+                              </div>
+                            ) : null}
+                            {!isLost && coordinates ? (
+                              <div>
+                                {t(locale, "map.coordinatesLabel")}: {coordinates}
+                              </div>
+                            ) : null}
+                            <div>
+                              {t(locale, "map.nearestAreaLabel")}: {nearestAreaLabel(r)}
+                            </div>
                           </div>
                         </div>
                       );
@@ -397,25 +452,45 @@ export default function MapClient() {
         </div>
 
         <aside className="listPanel">
-          <h2 className="listTitle">Animals needing help</h2>
+          <h2 className="listTitle">{t(locale, "map.heading")}</h2>
           <ul className="list">
             {list.map((r, idx) => {
-              const reportedAt = formatReportedAt(r);
+              const reportedAt = formatReportedAt(r, locale);
               const address = formatAddress(r);
               const coordinates = formatCoordinates(r);
               const isLost = r.report_type === "lost";
+              const statusBadge = resolveStatusBadge(r, locale);
+              const lostCaseId = formatLostCaseId(r);
               return (
                 <li key={(r.id ?? `list-${idx}`).toString()} className="listItem">
                   <div>
                     <strong>{r.species}</strong> · {r.condition}
-                    {isLost ? (
-                      <span style={{ marginLeft: 6, color: "#b01212", fontWeight: 700 }}>
-                        LOST
+                    {statusBadge ? (
+                      <span
+                        style={{
+                          marginLeft: 6,
+                          display: "inline-block",
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                          fontWeight: 700,
+                          fontSize: 11,
+                          letterSpacing: 0.4,
+                          ...statusBadge.style
+                        }}
+                      >
+                        {statusBadge.label}
                       </span>
                     ) : null}
                   </div>
                   <div style={{ marginTop: 4, fontSize: 12, opacity: 0.7, lineHeight: 1.4 }}>
-                    <div>{isLost ? "Approximate area" : address ?? "Address pending"}</div>
+                    <div>
+                      {isLost ? t(locale, "map.approximateArea") : address ?? t(locale, "map.addressPending")}
+                    </div>
+                    {isLost && lostCaseId ? (
+                      <div>
+                        {t(locale, "report.lostCase.label")}: {lostCaseId}
+                      </div>
+                    ) : null}
                     {reportedAt ? (
                       <>
                         <div>{reportedAt.reportedLabel}</div>
@@ -427,6 +502,9 @@ export default function MapClient() {
               );
             })}
           </ul>
+          {!hasActiveReports ? (
+            <p style={{ marginTop: 16, color: "#6d6558" }}>{t(locale, "map.empty")}</p>
+          ) : null}
         </aside>
       </div>
     </main>

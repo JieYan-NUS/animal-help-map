@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import tzLookup from "tz-lookup";
 import { getUtcOffsetMinutes, isValidTimeZone } from "@/lib/timezone";
+import { generateLostCaseId } from "@/lib/lostCaseId";
 
 type ReportRequest = {
   report_type?: "need_help" | "lost";
@@ -30,10 +31,12 @@ type ReportRow = {
   report_tz: string | null;
   report_utc_offset_minutes: number | null;
   reporter_contact: string | null;
+  status: string | null;
   last_seen_at: string | null;
   expires_at: string | null;
   resolved_at: string | null;
   photo_path: string | null;
+  lost_case_id: string | null;
   created_at: string;
 };
 
@@ -52,10 +55,12 @@ type ReportResponse = {
   report_tz: string | null;
   report_utc_offset_minutes: number | null;
   contact: string | null;
+  status: string | null;
   last_seen_at: string | null;
   expires_at: string | null;
   resolved_at: string | null;
   photoUrl: string | null;
+  lost_case_id: string | null;
   created_at: string;
 };
 
@@ -65,6 +70,7 @@ const supabase = createClient(
 );
 
 const isBlank = (value?: string) => !value || !value.trim();
+const MAX_LOST_CASE_ATTEMPTS = 5;
 
 const buildReportPhotoUrl = (path?: string | null) => {
   if (!path) return null;
@@ -99,6 +105,12 @@ const fetchReverseGeocode = async (
     console.error("Mapbox reverse geocode crash:", error);
     return { address: null };
   }
+};
+
+const isLostCaseIdCollision = (error: { code?: string; message?: string; details?: string }) => {
+  if (error?.code !== "23505") return false;
+  const message = `${error?.message ?? ""} ${error?.details ?? ""}`.toLowerCase();
+  return message.includes("lost_case_id");
 };
 
 export async function POST(request: Request) {
@@ -186,31 +198,49 @@ export async function POST(request: Request) {
         ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
         : null;
 
-    // IMPORTANT: match your DB column names here
-    const { error } = await supabase.from("reports").insert([
-      {
-        report_type: reportType,
-        species: body.species.trim(),
-        condition: reportType === "lost" ? "Lost" : body.condition.trim(),
-        description: body.description?.trim() || null,
-        location_description: body.locationDescription.trim(),
-        latitude,
-        longitude,
-        address,
-        address_source: addressSource,
-        geocoded_at: geocodedAt,
-        report_tz: reportTimeZone,
-        report_utc_offset_minutes: reportUtcOffsetMinutes,
-        reporter_contact: body.contact?.trim() || null,
-        status: "Reported",
-        last_seen_at: lastSeenAt,
-        expires_at: expiresAt
-      },
-    ]);
+    let lostCaseId: string | null = null;
+    let insertError: { message?: string } | null = null;
+    for (let attempt = 0; attempt < MAX_LOST_CASE_ATTEMPTS; attempt += 1) {
+      if (reportType === "lost") {
+        lostCaseId = generateLostCaseId();
+      }
+      // IMPORTANT: match your DB column names here
+      const { error } = await supabase.from("reports").insert([
+        {
+          report_type: reportType,
+          lost_case_id: reportType === "lost" ? lostCaseId : null,
+          species: body.species.trim(),
+          condition: reportType === "lost" ? "Lost" : body.condition.trim(),
+          description: body.description?.trim() || null,
+          location_description: body.locationDescription.trim(),
+          latitude,
+          longitude,
+          address,
+          address_source: addressSource,
+          geocoded_at: geocodedAt,
+          report_tz: reportTimeZone,
+          report_utc_offset_minutes: reportUtcOffsetMinutes,
+          reporter_contact: body.contact?.trim() || null,
+          status: "Reported",
+          last_seen_at: lastSeenAt,
+          expires_at: expiresAt
+        },
+      ]);
 
-    if (error) {
-      console.error("Supabase insert error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      if (!error) {
+        insertError = null;
+        break;
+      }
+
+      insertError = error;
+      if (reportType !== "lost" || !isLostCaseIdCollision(error)) {
+        break;
+      }
+    }
+
+    if (insertError) {
+      console.error("Supabase insert error:", insertError);
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });
@@ -225,8 +255,9 @@ export async function GET() {
     const { data, error } = await supabase
       .from("reports")
       .select(
-        "id, created_at, report_type, species, condition, description, location_description, latitude, longitude, address, address_source, geocoded_at, report_tz, report_utc_offset_minutes, reporter_contact, last_seen_at, expires_at, resolved_at, photo_path"
+        "id, created_at, report_type, species, condition, description, location_description, latitude, longitude, address, address_source, geocoded_at, report_tz, report_utc_offset_minutes, reporter_contact, status, last_seen_at, expires_at, resolved_at, photo_path, lost_case_id"
       )
+      .eq("status", "Reported")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -254,15 +285,18 @@ export async function GET() {
             report_tz: report.report_tz ?? null,
             report_utc_offset_minutes: report.report_utc_offset_minutes ?? null,
             contact: report.reporter_contact ?? null,
+            status: report.status ?? null,
             last_seen_at: report.last_seen_at ?? null,
             expires_at: report.expires_at ?? null,
             resolved_at: report.resolved_at ?? null,
             photoUrl: buildReportPhotoUrl(report.photo_path),
+            lost_case_id: report.lost_case_id ?? null,
             created_at: report.created_at
           };
         })
         ?.filter((report) => {
           const reportType = report.report_type ?? "need_help";
+          if (report.status !== "Reported") return false;
           if (reportType !== "lost") return true;
           if (report.resolved_at) return false;
           if (!report.expires_at) return true;

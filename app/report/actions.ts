@@ -7,6 +7,12 @@ import { reverseGeocodeWithMapbox } from "@/lib/geocode";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import tzLookup from "tz-lookup";
 import { getUtcOffsetMinutes, isValidTimeZone } from "@/lib/timezone";
+import { isLocale, t } from "@/lib/i18n";
+import {
+  generateLostCaseId,
+  isLostCaseIdFormat,
+  normalizeLostCaseId
+} from "@/lib/lostCaseId";
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -14,13 +20,22 @@ const ALLOWED_MIME_TYPES = new Set([
   "image/png",
   "image/webp"
 ]);
+const MAX_LOST_CASE_ATTEMPTS = 5;
 
 type ReportFormState = {
   status: "idle" | "error" | "success";
+  ok?: boolean;
   message?: string;
   fieldErrors?: Record<string, string>;
   reportId?: string;
+  lostCaseId?: string | null;
   reportType?: "need_help" | "lost";
+  errorCode?: "not_found" | "mismatch" | "already_resolved" | "invalid_code" | "not_lost";
+};
+
+type CancelReportState = {
+  ok: boolean | null;
+  error?: "not_found" | "mismatch" | "already_resolved";
 };
 
 const isBlank = (value: string) => !value.trim();
@@ -55,10 +70,21 @@ const resolvePhotoUpload = async (file: File, reportId: string) => {
   return { error: null, path };
 };
 
+const isLostCaseIdCollision = (error: { code?: string; message?: string; details?: string }) => {
+  if (error?.code !== "23505") return false;
+  const message = `${error?.message ?? ""} ${error?.details ?? ""}`.toLowerCase();
+  return message.includes("lost_case_id");
+};
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function submitReport(
   _prevState: ReportFormState,
   formData: FormData
 ): Promise<ReportFormState> {
+  const localeInput = getString(formData, "locale");
+  const locale = isLocale(localeInput) ? localeInput : "en";
   const fieldErrors: Record<string, string> = {};
   const reportType = getString(formData, "report_type") || "need_help";
   const species = getString(formData, "species");
@@ -71,43 +97,43 @@ export async function submitReport(
   const lastSeenInput = getString(formData, "last_seen_at");
   const photo = formData.get("photo");
 
-  if (isBlank(species)) fieldErrors.species = "Please choose a species.";
+  if (isBlank(species)) fieldErrors.species = t(locale, "report.error.speciesRequired");
 
   const isLost = reportType === "lost";
   if (!isLost && isBlank(condition)) {
-    fieldErrors.condition = "Please choose the animal's condition.";
+    fieldErrors.condition = t(locale, "report.error.conditionRequired");
   }
 
   if (isBlank(locationDescription)) {
-    fieldErrors.location_description = "Please share a brief location note.";
+    fieldErrors.location_description = t(locale, "report.error.locationRequired");
   }
 
   if (isLost && isBlank(description)) {
-    fieldErrors.description = "Please add a short identifying description.";
+    fieldErrors.description = t(locale, "report.error.descriptionRequired");
   }
 
   if (isLost && isBlank(lastSeenInput)) {
-    fieldErrors.last_seen_at = "Please add when the animal was last seen.";
+    fieldErrors.last_seen_at = t(locale, "report.error.lastSeenRequired");
   }
 
   if (isLost && isBlank(contact)) {
-    fieldErrors.contact = "Please share a way to reach you.";
+    fieldErrors.contact = t(locale, "report.error.contactRequired");
   }
 
   const latitude = parseOptionalNumber(latitudeInput);
   const longitude = parseOptionalNumber(longitudeInput);
   if (Number.isNaN(latitude)) {
-    fieldErrors.latitude = "Latitude must be a valid number.";
+    fieldErrors.latitude = t(locale, "report.error.latitudeInvalid");
   }
   if (Number.isNaN(longitude)) {
-    fieldErrors.longitude = "Longitude must be a valid number.";
+    fieldErrors.longitude = t(locale, "report.error.longitudeInvalid");
   }
 
   let lastSeenAt: string | null = null;
   if (lastSeenInput) {
     const parsedDate = new Date(lastSeenInput);
     if (Number.isNaN(parsedDate.getTime())) {
-      fieldErrors.last_seen_at = "Please use a valid date and time.";
+      fieldErrors.last_seen_at = t(locale, "report.error.lastSeenInvalid");
     } else {
       lastSeenAt = parsedDate.toISOString();
     }
@@ -116,9 +142,9 @@ export async function submitReport(
   let photoFile: File | null = null;
   if (photo instanceof File && photo.size > 0) {
     if (!ALLOWED_MIME_TYPES.has(photo.type)) {
-      fieldErrors.photo = "Only JPG, PNG, or WebP images are allowed.";
+      fieldErrors.photo = t(locale, "report.error.photoType");
     } else if (photo.size > MAX_FILE_BYTES) {
-      fieldErrors.photo = "Photo must be 5MB or smaller.";
+      fieldErrors.photo = t(locale, "report.error.photoSize");
     } else {
       photoFile = photo;
     }
@@ -127,7 +153,7 @@ export async function submitReport(
   if (Object.keys(fieldErrors).length > 0) {
     return {
       status: "error",
-      message: "Please fix the highlighted fields and try again.",
+      message: t(locale, "report.error.fixFields"),
       fieldErrors,
       reportType: isLost ? "lost" : "need_help"
     };
@@ -140,7 +166,7 @@ export async function submitReport(
     if (uploadResult.error) {
       return {
         status: "error",
-        message: `We saved your report, but uploading the photo failed. ${uploadResult.error}`,
+        message: `${t(locale, "report.error.photoUploadFailed")} ${uploadResult.error}`,
         reportType: isLost ? "lost" : "need_help"
       };
     }
@@ -167,34 +193,54 @@ export async function submitReport(
     }
   }
 
-  const { error } = await supabase.from("reports").insert([
-    {
-      id: reportId,
-      report_type: isLost ? "lost" : "need_help",
-      species,
-      condition: isLost ? "Lost" : condition,
-      description: description || null,
-      location_description: locationDescription,
-      latitude: Number.isFinite(latitude) ? latitude : null,
-      longitude: Number.isFinite(longitude) ? longitude : null,
-      address: null,
-      address_source: null,
-      geocoded_at: null,
-      report_tz: reportTimeZone,
-      report_utc_offset_minutes: reportUtcOffsetMinutes,
-      reporter_contact: contact || null,
-      status: "Reported",
-      last_seen_at: isLost ? lastSeenAt : null,
-      expires_at: expiresAt,
-      photo_path: photoPath
+  let lostCaseId: string | null = null;
+  let insertError: { message?: string } | null = null;
+  for (let attempt = 0; attempt < MAX_LOST_CASE_ATTEMPTS; attempt += 1) {
+    // Sanity check: only retry when we hit a lost_case_id unique collision.
+    if (isLost) {
+      lostCaseId = generateLostCaseId();
     }
-  ]);
 
-  if (error) {
-    console.error("Report insert error:", error);
+    const { error } = await supabase.from("reports").insert([
+      {
+        id: reportId,
+        report_type: isLost ? "lost" : "need_help",
+        lost_case_id: isLost ? lostCaseId : null,
+        species,
+        condition: isLost ? "Lost" : condition,
+        description: description || null,
+        location_description: locationDescription,
+        latitude: Number.isFinite(latitude) ? latitude : null,
+        longitude: Number.isFinite(longitude) ? longitude : null,
+        address: null,
+        address_source: null,
+        geocoded_at: null,
+        report_tz: reportTimeZone,
+        report_utc_offset_minutes: reportUtcOffsetMinutes,
+        reporter_contact: contact || null,
+        status: "Reported",
+        last_seen_at: isLost ? lastSeenAt : null,
+        expires_at: expiresAt,
+        photo_path: photoPath
+      }
+    ]);
+
+    if (!error) {
+      insertError = null;
+      break;
+    }
+
+    insertError = error;
+    if (!isLost || !isLostCaseIdCollision(error)) {
+      break;
+    }
+  }
+
+  if (insertError) {
+    console.error("Report insert error:", insertError);
     return {
       status: "error",
-      message: `We couldn't save your report. ${error.message}`,
+      message: `${t(locale, "report.error.saveFailed")} ${insertError.message ?? ""}`.trim(),
       reportType: isLost ? "lost" : "need_help"
     };
   }
@@ -236,8 +282,9 @@ export async function submitReport(
 
   return {
     status: "success",
-    message: "Thanks! Your report is in the queue.",
+    message: t(locale, "report.success.submitted"),
     reportId,
+    lostCaseId,
     reportType: isLost ? "lost" : "need_help"
   };
 }
@@ -246,65 +293,116 @@ export async function resolveLostReport(
   _prevState: ReportFormState,
   formData: FormData
 ): Promise<ReportFormState> {
-  const reportId = getString(formData, "report_id");
+  const localeInput = getString(formData, "locale");
+  const locale = isLocale(localeInput) ? localeInput : "en";
+  const reportIdInput = getString(formData, "report_id");
   const contact = getString(formData, "contact");
 
-  if (isBlank(reportId) || isBlank(contact)) {
+  if (isBlank(reportIdInput) || isBlank(contact)) {
     return {
       status: "error",
-      message: "Please provide the report ID and the contact used on the report."
+      ok: false,
+      errorCode: "not_found",
+      message: t(locale, "report.resolve.error.missingFields")
     };
   }
 
-  const supabase = createSupabaseClient();
-  const { data, error } = await supabase
+  const normalizedLostCaseId = normalizeLostCaseId(reportIdInput);
+  const reporterContact = contact.trim();
+
+  if (!isLostCaseIdFormat(normalizedLostCaseId)) {
+    return {
+      status: "error",
+      ok: false,
+      errorCode: "invalid_code",
+      message: t(locale, "report.resolve.error.invalidCode")
+    };
+  }
+
+  const supabaseAdmin = createSupabaseAdminClient();
+  const { data: lostCaseData, error: lostCaseError } = await supabaseAdmin
     .from("reports")
-    .select("id, report_type, reporter_contact, resolved_at")
-    .eq("id", reportId)
+    .select("id, report_type, reporter_contact, status, resolved_at")
+    .eq("report_type", "lost")
+    .ilike("lost_case_id", normalizedLostCaseId)
     .maybeSingle();
 
-  if (error || !data) {
+  if (lostCaseError) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Resolve report fetch error:", lostCaseError);
+    }
     return {
       status: "error",
-      message: "We couldn't find that report."
+      ok: false,
+      errorCode: "not_found",
+      message: t(locale, "report.resolve.error.notFound")
     };
   }
 
-  if (data.report_type !== "lost") {
+  if (!lostCaseData) {
     return {
       status: "error",
-      message: "Only lost animal reports can be marked as found."
+      ok: false,
+      errorCode: "not_found",
+      message: t(locale, "report.resolve.error.notFound")
     };
   }
 
-  if (data.resolved_at) {
+  if (lostCaseData.report_type !== "lost") {
+    return {
+      status: "error",
+      ok: false,
+      errorCode: "not_lost",
+      message: t(locale, "report.resolve.error.notLost")
+    };
+  }
+
+  const storedContact = lostCaseData.reporter_contact?.trim() || "";
+  if (!storedContact || storedContact !== reporterContact) {
+    return {
+      status: "error",
+      ok: false,
+      errorCode: "mismatch",
+      message: t(locale, "report.resolve.error.contactMismatch")
+    };
+  }
+
+  if (lostCaseData.status && lostCaseData.status !== "Reported") {
     return {
       status: "success",
-      message: "That report is already marked as found."
+      ok: true,
+      errorCode: "already_resolved",
+      message: t(locale, "report.resolve.success.alreadyResolved")
     };
   }
 
-  const storedContact = data.reporter_contact?.trim() || "";
-  if (!storedContact || storedContact !== contact) {
+  if (lostCaseData.resolved_at) {
     return {
-      status: "error",
-      message: "The contact info doesn't match the report on file."
+      status: "success",
+      ok: true,
+      errorCode: "already_resolved",
+      message: t(locale, "report.resolve.success.alreadyResolved")
     };
   }
 
-  const { error: updateError } = await supabase
+  const { data: updatedRows, error: updateError } = await supabaseAdmin
     .from("reports")
     .update({
       resolved_at: new Date().toISOString(),
-      status: "Resolved"
+      status: "Found"
     })
-    .eq("id", reportId);
+    .eq("id", lostCaseData.id)
+    .eq("status", "Reported")
+    .select("id");
 
-  if (updateError) {
-    console.error("Resolve report error:", updateError);
+  if (updateError || !updatedRows || updatedRows.length === 0) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Resolve report update error:", updateError);
+    }
     return {
       status: "error",
-      message: "We couldn't update that report. Please try again."
+      ok: false,
+      message: t(locale, "report.resolve.error.updateFailed")
     };
   }
 
@@ -313,6 +411,83 @@ export async function resolveLostReport(
 
   return {
     status: "success",
-    message: "Thanks! We've marked the report as found."
+    ok: true,
+    message: t(locale, "report.resolve.success.resolved")
   };
+}
+
+export async function cancelLostReport(
+  _prevState: CancelReportState,
+  formData: FormData
+): Promise<CancelReportState> {
+  const lostCaseIdInput = getString(formData, "lostCaseId");
+  const reporterContact = getString(formData, "reporterContact");
+
+  if (isBlank(lostCaseIdInput) || isBlank(reporterContact)) {
+    return { ok: false, error: "mismatch" };
+  }
+
+  const normalizedLostCaseId = normalizeLostCaseId(lostCaseIdInput);
+  const supabase = createSupabaseClient();
+  const { data: lostCaseData, error: lostCaseError } = await supabase
+    .from("reports")
+    .select("id, report_type, reporter_contact, resolved_at, status")
+    .ilike("lost_case_id", normalizedLostCaseId)
+    .maybeSingle();
+
+  if (lostCaseError) {
+    console.error("Cancel report fetch error:", lostCaseError);
+    return { ok: false, error: "not_found" };
+  }
+
+  let data = lostCaseData;
+
+  if (!data) {
+    const looksLikeUuid = UUID_PATTERN.test(lostCaseIdInput.trim());
+    if (looksLikeUuid) {
+      const { data: uuidData, error: uuidError } = await supabase
+        .from("reports")
+        .select("id, report_type, reporter_contact, resolved_at, status")
+        .eq("id", lostCaseIdInput.trim())
+        .maybeSingle();
+
+      if (uuidError || !uuidData) {
+        return { ok: false, error: "not_found" };
+      }
+      data = uuidData;
+    } else {
+      return { ok: false, error: "not_found" };
+    }
+  }
+
+  if (!data || data.report_type !== "lost") {
+    return { ok: false, error: "not_found" };
+  }
+
+  const storedContact = data.reporter_contact?.trim() || "";
+  if (!storedContact || storedContact !== reporterContact) {
+    return { ok: false, error: "mismatch" };
+  }
+
+  if (data.resolved_at || (data.status && data.status !== "Reported")) {
+    return { ok: false, error: "already_resolved" };
+  }
+
+  const { error: updateError } = await supabase
+    .from("reports")
+    .update({
+      resolved_at: new Date().toISOString(),
+      status: "Cancelled"
+    })
+    .eq("id", data.id);
+
+  if (updateError) {
+    console.error("Cancel report update error:", updateError);
+    return { ok: false, error: "not_found" };
+  }
+
+  revalidatePath("/map");
+  revalidatePath("/report");
+
+  return { ok: true };
 }

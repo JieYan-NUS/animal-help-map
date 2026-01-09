@@ -3,41 +3,42 @@
 import { useEffect, useRef, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { submitStory, type StoryFormState } from "./actions";
+import { t, type Locale } from "@/lib/i18n";
 
 const initialState: StoryFormState = { status: "idle" };
 
 const animalOptions = [
-  { value: "cat", label: "Cat" },
-  { value: "dog", label: "Dog" },
-  { value: "bird", label: "Bird" },
-  { value: "other", label: "Other" }
+  { value: "cat", labelKey: "stories.form.animalOptions.cat" },
+  { value: "dog", labelKey: "stories.form.animalOptions.dog" },
+  { value: "bird", labelKey: "stories.form.animalOptions.bird" },
+  { value: "other", labelKey: "stories.form.animalOptions.other" }
 ];
 
-const validateFile = (file: File | null, label: string): string | null => {
+const validateFile = (locale: Locale, file: File | null): string | null => {
   if (!file) return null;
   const isAllowedType =
     ["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
     /[.]?(jpe?g|png|webp)$/i.test(file.name);
   if (!isAllowedType) {
-    return `Only JPG, PNG, or WebP images are allowed for the ${label.toLowerCase()}.`;
+    return t(locale, "stories.error.photoType");
   }
   if (file.size > 5 * 1024 * 1024) {
-    return `${label} must be 5MB or smaller.`;
+    return t(locale, "stories.error.photoSize");
   }
   return null;
 };
 
-function SubmitButton() {
+function SubmitButton({ locale }: { locale: Locale }) {
   const { pending } = useFormStatus();
 
   return (
     <button className="button" type="submit" disabled={pending}>
-      {pending ? "Submitting..." : "Submit story"}
+      {pending ? t(locale, "stories.submitting") : t(locale, "stories.submitButton")}
     </button>
   );
 }
 
-export default function StorySubmitForm() {
+export default function StorySubmitForm({ locale }: { locale: Locale }) {
   const [state, formAction] = useFormState(submitStory, initialState);
   const [clientError, setClientError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -58,13 +59,13 @@ export default function StorySubmitForm() {
 
     if (excerpt.length > 140) {
       event.preventDefault();
-      setClientError("Excerpt must be 140 characters or less.");
+      setClientError(t(locale, "stories.error.excerptTooLong"));
       return;
     }
 
     if (!consent) {
       event.preventDefault();
-      setClientError("Please confirm the consent checkbox before submitting.");
+      setClientError(t(locale, "stories.error.consentRequired"));
       return;
     }
 
@@ -79,18 +80,18 @@ export default function StorySubmitForm() {
 
     if (!beforeFile) {
       event.preventDefault();
-      setClientError("Please upload a before photo.");
+      setClientError(t(locale, "stories.error.beforePhotoRequired"));
       return;
     }
 
-    const beforeError = validateFile(beforeFile, "Before photo");
+    const beforeError = validateFile(locale, beforeFile);
     if (beforeError) {
       event.preventDefault();
       setClientError(beforeError);
       return;
     }
 
-    const afterError = validateFile(afterFile, "After photo");
+    const afterError = validateFile(locale, afterFile);
     if (afterError) {
       event.preventDefault();
       setClientError(afterError);
@@ -103,8 +104,8 @@ export default function StorySubmitForm() {
       className="form"
       action={formAction}
       onSubmit={handleSubmit}
-      encType="multipart/form-data"
     >
+      <input type="hidden" name="locale" value={locale} />
       {state.status === "success" && state.message ? (
         <p className="success" role="status">
           {state.message}
@@ -122,7 +123,7 @@ export default function StorySubmitForm() {
       ) : null}
 
       <div className="field">
-        <label htmlFor="title">Title (required)</label>
+        <label htmlFor="title">{t(locale, "stories.form.title.label")}</label>
         <input
           id="title"
           name="title"
@@ -141,7 +142,7 @@ export default function StorySubmitForm() {
       </div>
 
       <div className="field">
-        <label htmlFor="animal_type">Animal type (required)</label>
+        <label htmlFor="animal_type">{t(locale, "stories.form.animalType.label")}</label>
         <select
           id="animal_type"
           name="animal_type"
@@ -153,11 +154,11 @@ export default function StorySubmitForm() {
           defaultValue=""
         >
           <option value="" disabled>
-            Select an animal
+            {t(locale, "stories.form.animalType.placeholder")}
           </option>
           {animalOptions.map((option) => (
             <option key={option.value} value={option.value}>
-              {option.label}
+              {t(locale, option.labelKey)}
             </option>
           ))}
         </select>
@@ -169,7 +170,7 @@ export default function StorySubmitForm() {
       </div>
 
       <div className="field">
-        <label htmlFor="city">City (required)</label>
+        <label htmlFor="city">{t(locale, "stories.form.city.label")}</label>
         <input
           id="city"
           name="city"
@@ -186,12 +187,12 @@ export default function StorySubmitForm() {
       </div>
 
       <div className="field">
-        <label htmlFor="month_year">Month and year (required)</label>
+        <label htmlFor="month_year">{t(locale, "stories.form.monthYear.label")}</label>
         <input
           id="month_year"
           name="month_year"
           type="text"
-          placeholder="Jan 2026"
+          placeholder={t(locale, "stories.form.monthYear.placeholder")}
           required
           aria-invalid={Boolean(state.fieldErrors?.month_year)}
           aria-describedby={
@@ -206,7 +207,7 @@ export default function StorySubmitForm() {
       </div>
 
       <div className="field">
-        <label htmlFor="excerpt">Excerpt (required, max 140 chars)</label>
+        <label htmlFor="excerpt">{t(locale, "stories.form.excerpt.label")}</label>
         <textarea
           id="excerpt"
           name="excerpt"
@@ -226,7 +227,7 @@ export default function StorySubmitForm() {
       </div>
 
       <div className="field">
-        <label htmlFor="content">Story (required)</label>
+        <label htmlFor="content">{t(locale, "stories.form.content.label")}</label>
         <textarea
           id="content"
           name="content"
@@ -245,18 +246,18 @@ export default function StorySubmitForm() {
       </div>
 
       <div className="field">
-        <label htmlFor="author_name">Your name (optional)</label>
+        <label htmlFor="author_name">{t(locale, "stories.form.authorName.label")}</label>
         <input id="author_name" name="author_name" type="text" />
       </div>
 
       <div className="field">
-        <label htmlFor="author_contact">Contact (optional)</label>
+        <label htmlFor="author_contact">{t(locale, "stories.form.authorContact.label")}</label>
         <input id="author_contact" name="author_contact" type="text" />
       </div>
 
       <div className="field">
-        <label htmlFor="before_photo">Before photo (required)</label>
-        <p className="helper">JPG, PNG, or WebP. Max 5MB.</p>
+        <label htmlFor="before_photo">{t(locale, "stories.form.beforePhoto.label")}</label>
+        <p className="helper">{t(locale, "stories.form.photo.helper")}</p>
         <input
           id="before_photo"
           name="before_photo"
@@ -276,8 +277,8 @@ export default function StorySubmitForm() {
       </div>
 
       <div className="field">
-        <label htmlFor="after_photo">After photo (optional)</label>
-        <p className="helper">JPG, PNG, or WebP. Max 5MB.</p>
+        <label htmlFor="after_photo">{t(locale, "stories.form.afterPhoto.label")}</label>
+        <p className="helper">{t(locale, "stories.form.photo.helper")}</p>
         <input
           id="after_photo"
           name="after_photo"
@@ -307,7 +308,7 @@ export default function StorySubmitForm() {
               state.fieldErrors?.consent ? "consent-error" : undefined
             }
           />{" "}
-          I own these images and allow Pawscue to display them.
+          {t(locale, "stories.form.consent.label")}
         </label>
         {state.fieldErrors?.consent ? (
           <p className="error" id="consent-error">
@@ -316,7 +317,7 @@ export default function StorySubmitForm() {
         ) : null}
       </div>
 
-      <SubmitButton />
+      <SubmitButton locale={locale} />
     </form>
   );
 }

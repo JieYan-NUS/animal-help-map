@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { formatAnimalType, getStoryPhotoUrl } from "@/lib/storyUtils";
 import BeforeAfterSlider from "../BeforeAfterSlider";
+import { getServerLocale, t } from "@/lib/i18n";
 
 type PageProps = {
   params: { slug: string };
@@ -33,6 +34,7 @@ const splitBody = (body: string): string[] =>
 
 export default async function StoryDetailPage({ params }: PageProps) {
   noStore();
+  const locale = getServerLocale();
   const supabase = createSupabaseClient();
   const { data, error } = await supabase
     .from("stories")
@@ -68,7 +70,7 @@ story_photos ( path, sort_order, photo_type )
   return (
     <>
       <Link className="story-back" href="/stories">
-        Back to stories
+        {t(locale, "stories.back")}
       </Link>
 
       <header className="story-header">
@@ -87,8 +89,8 @@ story_photos ( path, sort_order, photo_type )
           className="story-hero"
           beforeSrc={beforeImage}
           afterSrc={afterImage}
-          beforeAlt={`Before photo for ${story.title}`}
-          afterAlt={`After photo for ${story.title}`}
+          beforeAlt={`${t(locale, "stories.beforeAltPrefix")}${story.title}`}
+          afterAlt={`${t(locale, "stories.afterAltPrefix")}${story.title}`}
           sizes="(max-width: 720px) 100vw, 720px"
           priority
         />
@@ -96,7 +98,7 @@ story_photos ( path, sort_order, photo_type )
         <div className="story-hero">
           <Image
             src={beforeImage}
-            alt={`Cover for ${story.title}`}
+            alt={`${t(locale, "stories.beforeAltPrefix")}${story.title}`}
             fill
             sizes="(max-width: 720px) 100vw, 720px"
             priority
@@ -113,8 +115,12 @@ story_photos ( path, sort_order, photo_type )
       {(story.author_name || story.author_contact) && (
         <section className="story-body">
           <p>
-            Shared by{" "}
-            {story.author_name ? <strong>{story.author_name}</strong> : "Anonymous"}
+            {t(locale, "stories.sharedBy")}
+            {story.author_name ? (
+              <strong>{story.author_name}</strong>
+            ) : (
+              t(locale, "stories.anonymous")
+            )}
             {story.author_contact ? ` (${story.author_contact})` : null}.
           </p>
         </section>

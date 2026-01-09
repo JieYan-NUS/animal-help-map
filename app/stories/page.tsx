@@ -4,6 +4,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { formatAnimalType, getStoryPhotoUrl } from "@/lib/storyUtils";
 import BeforeAfterSlider from "./BeforeAfterSlider";
+import { getServerLocale, t } from "@/lib/i18n";
 
 type StoryCard = {
   id: string;
@@ -22,6 +23,7 @@ type StoryCard = {
 
 export default async function StoriesPage() {
   noStore();
+  const locale = getServerLocale();
   const supabase = createSupabaseClient();
 
   const { data, error } = await supabase
@@ -45,23 +47,23 @@ export default async function StoriesPage() {
       <header className="stories-header">
         <div className="stories-header-row">
           <div>
-            <h1>Stories</h1>
+            <h1>{t(locale, "stories.title")}</h1>
             <p className="stories-subtitle">
-              Rescue-to-home journeys, told by the community.
+              {t(locale, "stories.subtitle")}
             </p>
           </div>
           <Link className="button" href="/stories/submit">
-            Submit a story
+            {t(locale, "stories.submitCta")}
           </Link>
         </div>
       </header>
 
       {stories.length === 0 ? (
         <section className="stories-empty" aria-live="polite">
-          <p>No stories are published yet. Be the first to share one.</p>
+          <p>{t(locale, "stories.empty")}</p>
         </section>
       ) : (
-        <section className="stories-grid" aria-label="Community rescue stories">
+        <section className="stories-grid" aria-label={t(locale, "stories.listLabel")}>
           {stories.map((story) => {
             const photos = story.story_photos ?? [];
             const beforePhoto =
@@ -113,7 +115,7 @@ export default async function StoriesPage() {
                     className="button story-card-button"
                     href={`/stories/${story.slug}`}
                   >
-                    Read story
+                    {t(locale, "stories.readStory")}
                   </Link>
                 </div>
               </article>

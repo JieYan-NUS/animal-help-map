@@ -20,5 +20,10 @@ create table if not exists public.reports (
   last_seen_at timestamp with time zone,
   expires_at timestamp with time zone default (now() + interval '14 days'),
   resolved_at timestamp with time zone,
-  photo_path text
+  photo_path text,
+  lost_case_id text
 );
+
+create unique index if not exists reports_lost_case_id_unique
+  on public.reports (lost_case_id)
+  where lost_case_id is not null;
