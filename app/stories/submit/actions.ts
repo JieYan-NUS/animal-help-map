@@ -31,7 +31,7 @@ export async function submitStory(
   const fieldErrors: Record<string, string> = {};
 
   const title = getString(formData, "title");
-  const animalType = getString(formData, "animal_type");
+  const animalTypeInput = getString(formData, "animal_type");
   const city = getString(formData, "city");
   const monthYear = getString(formData, "month_year");
   const excerpt = getString(formData, "excerpt");
@@ -40,10 +40,15 @@ export async function submitStory(
   const authorContact = getString(formData, "author_contact");
   const categoryInput = getString(formData, "category");
   const category = categoryInput ? categoryInput.toLowerCase() : "rescue";
+  const isCommunity = category === "community";
   const consent = formData.get("consent");
 
   if (!title) fieldErrors.title = t(locale, "stories.error.titleRequired");
-  if (!animalType) fieldErrors.animal_type = t(locale, "stories.error.animalTypeRequired");
+  const normalizedAnimalType = isCommunity ? "other" : animalTypeInput;
+
+  if (!normalizedAnimalType && !isCommunity) {
+    fieldErrors.animal_type = t(locale, "stories.error.animalTypeRequired");
+  }
   if (!city) fieldErrors.city = t(locale, "stories.error.cityRequired");
   if (!monthYear) fieldErrors.month_year = t(locale, "stories.error.monthYearRequired");
   if (!excerpt) fieldErrors.excerpt = t(locale, "stories.error.excerptRequired");
@@ -56,7 +61,7 @@ export async function submitStory(
   }
 
   const allowedAnimalTypes = new Set(["cat", "dog", "bird", "other"]);
-  if (animalType && !allowedAnimalTypes.has(animalType)) {
+  if (normalizedAnimalType && !allowedAnimalTypes.has(normalizedAnimalType)) {
     fieldErrors.animal_type = t(locale, "stories.error.animalTypeInvalid");
   }
 
@@ -88,7 +93,7 @@ export async function submitStory(
     return file;
   };
 
-  const beforeFile = validatePhoto(beforePhoto, "before_photo", true);
+  const beforeFile = validatePhoto(beforePhoto, "before_photo", !isCommunity);
   const afterFile = validatePhoto(afterPhoto, "after_photo", false);
 
   if (Object.keys(fieldErrors).length > 0) {
@@ -107,7 +112,7 @@ export async function submitStory(
     id: storyId,
     title,
     slug,
-    animal_type: animalType,
+    animal_type: normalizedAnimalType,
     city,
     month_year: monthYear,
     excerpt,

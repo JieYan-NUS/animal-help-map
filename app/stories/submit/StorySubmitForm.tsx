@@ -14,6 +14,13 @@ const animalOptions = [
   { value: "other", labelKey: "stories.form.animalOptions.other" }
 ];
 
+const categoryOptions = [
+  { value: "rescue", labelKey: "stories.form.categoryOptions.rescue" },
+  { value: "lost_found", labelKey: "stories.form.categoryOptions.lostFound" },
+  { value: "shelter_foster", labelKey: "stories.form.categoryOptions.shelter" },
+  { value: "community", labelKey: "stories.form.categoryOptions.community" }
+];
+
 const validateFile = (locale: Locale, file: File | null): string | null => {
   if (!file) return null;
   const isAllowedType =
@@ -42,17 +49,27 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
   const [state, formAction] = useFormState(submitStory, initialState);
   const [clientError, setClientError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const [category, setCategory] = useState("rescue");
+  const isCommunity = category === "community";
 
   useEffect(() => {
     if (state.status === "success") {
       formRef.current?.reset();
       setClientError(null);
+      setCategory("rescue");
     }
   }, [state.status]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     setClientError(null);
     const form = event.currentTarget;
+    form
+      .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+        "input[type='text'], textarea"
+      )
+      .forEach((field) => {
+        field.value = field.value.trim();
+      });
     const formData = new FormData(form);
     const excerpt = String(formData.get("excerpt") ?? "").trim();
     const consent = formData.get("consent");
@@ -71,30 +88,34 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
 
     const beforeInput = form.elements.namedItem(
       "before_photo"
-    ) as HTMLInputElement;
+    ) as HTMLInputElement | null;
     const afterInput = form.elements.namedItem(
       "after_photo"
-    ) as HTMLInputElement;
+    ) as HTMLInputElement | null;
     const beforeFile = beforeInput?.files?.[0] ?? null;
     const afterFile = afterInput?.files?.[0] ?? null;
 
-    if (!beforeFile) {
+    if (!beforeFile && !isCommunity) {
       event.preventDefault();
       setClientError(t(locale, "stories.error.beforePhotoRequired"));
       return;
     }
 
-    const beforeError = validateFile(locale, beforeFile);
-    if (beforeError) {
-      event.preventDefault();
-      setClientError(beforeError);
-      return;
+    if (beforeFile) {
+      const beforeError = validateFile(locale, beforeFile);
+      if (beforeError) {
+        event.preventDefault();
+        setClientError(beforeError);
+        return;
+      }
     }
 
-    const afterError = validateFile(locale, afterFile);
-    if (afterError) {
-      event.preventDefault();
-      setClientError(afterError);
+    if (afterFile) {
+      const afterError = validateFile(locale, afterFile);
+      if (afterError) {
+        event.preventDefault();
+        setClientError(afterError);
+      }
     }
   };
 
@@ -142,32 +163,60 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
       </div>
 
       <div className="field">
-        <label htmlFor="animal_type">{t(locale, "stories.form.animalType.label")}</label>
+        <label htmlFor="category">{t(locale, "stories.form.category.label")}</label>
         <select
-          id="animal_type"
-          name="animal_type"
-          required
-          aria-invalid={Boolean(state.fieldErrors?.animal_type)}
-          aria-describedby={
-            state.fieldErrors?.animal_type ? "animal-type-error" : undefined
-          }
-          defaultValue=""
+          id="category"
+          name="category"
+          value={category}
+          onChange={(event) => setCategory(event.target.value)}
         >
-          <option value="" disabled>
-            {t(locale, "stories.form.animalType.placeholder")}
-          </option>
-          {animalOptions.map((option) => (
+          {categoryOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {t(locale, option.labelKey)}
             </option>
           ))}
         </select>
-        {state.fieldErrors?.animal_type ? (
-          <p className="error" id="animal-type-error">
-            {state.fieldErrors.animal_type}
+        {isCommunity ? (
+          <p className="helper">
+            {t(locale, "stories.form.category.helper.community")}
           </p>
         ) : null}
       </div>
+
+      {isCommunity ? null : (
+        <div className="field">
+          <label htmlFor="animal_type">
+            {t(locale, "stories.form.animalType.label")}
+          </label>
+          <select
+            id="animal_type"
+            name="animal_type"
+            required
+            aria-invalid={Boolean(state.fieldErrors?.animal_type)}
+            aria-describedby={
+              state.fieldErrors?.animal_type ? "animal-type-error" : undefined
+            }
+            defaultValue=""
+          >
+            <option value="" disabled>
+              {t(locale, "stories.form.animalType.placeholder")}
+            </option>
+            {animalOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {t(locale, option.labelKey)}
+              </option>
+            ))}
+          </select>
+          {state.fieldErrors?.animal_type ? (
+            <p className="error" id="animal-type-error">
+              {state.fieldErrors.animal_type}
+            </p>
+          ) : null}
+        </div>
+      )}
+      {isCommunity ? (
+        <input type="hidden" name="animal_type" value="other" />
+      ) : null}
 
       <div className="field">
         <label htmlFor="city">{t(locale, "stories.form.city.label")}</label>
@@ -256,14 +305,21 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
       </div>
 
       <div className="field">
-        <label htmlFor="before_photo">{t(locale, "stories.form.beforePhoto.label")}</label>
+        <label htmlFor="before_photo">
+          {t(
+            locale,
+            isCommunity
+              ? "stories.form.beforePhoto.optionalLabel"
+              : "stories.form.beforePhoto.label"
+          )}
+        </label>
         <p className="helper">{t(locale, "stories.form.photo.helper")}</p>
         <input
           id="before_photo"
           name="before_photo"
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          required
+          required={!isCommunity}
           aria-invalid={Boolean(state.fieldErrors?.before_photo)}
           aria-describedby={
             state.fieldErrors?.before_photo ? "before-photo-error" : undefined
@@ -276,25 +332,29 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
         ) : null}
       </div>
 
-      <div className="field">
-        <label htmlFor="after_photo">{t(locale, "stories.form.afterPhoto.label")}</label>
-        <p className="helper">{t(locale, "stories.form.photo.helper")}</p>
-        <input
-          id="after_photo"
-          name="after_photo"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          aria-invalid={Boolean(state.fieldErrors?.after_photo)}
-          aria-describedby={
-            state.fieldErrors?.after_photo ? "after-photo-error" : undefined
-          }
-        />
-        {state.fieldErrors?.after_photo ? (
-          <p className="error" id="after-photo-error">
-            {state.fieldErrors.after_photo}
-          </p>
-        ) : null}
-      </div>
+      {isCommunity ? null : (
+        <div className="field">
+          <label htmlFor="after_photo">
+            {t(locale, "stories.form.afterPhoto.label")}
+          </label>
+          <p className="helper">{t(locale, "stories.form.photo.helper")}</p>
+          <input
+            id="after_photo"
+            name="after_photo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            aria-invalid={Boolean(state.fieldErrors?.after_photo)}
+            aria-describedby={
+              state.fieldErrors?.after_photo ? "after-photo-error" : undefined
+            }
+          />
+          {state.fieldErrors?.after_photo ? (
+            <p className="error" id="after-photo-error">
+              {state.fieldErrors.after_photo}
+            </p>
+          ) : null}
+        </div>
+      )}
 
       <div className="field">
         <label className="checkbox">
