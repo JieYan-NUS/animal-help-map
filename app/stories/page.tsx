@@ -35,6 +35,8 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
       ? "lost_found"
       : searchParams?.category === "shelter_foster"
         ? "shelter_foster"
+        : searchParams?.category === "community"
+          ? "community"
         : "rescue";
 
   let storiesQuery = supabase
@@ -51,6 +53,8 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
     storiesQuery = storiesQuery.eq("category", "lost_found");
   } else if (activeCategory === "shelter_foster") {
     storiesQuery = storiesQuery.eq("category", "shelter_foster");
+  } else if (activeCategory === "community") {
+    storiesQuery = storiesQuery.eq("category", "community");
   } else {
     storiesQuery = storiesQuery.or("category.eq.rescue,category.is.null,category.eq.");
   }
@@ -70,7 +74,9 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
           <div>
             <h1>{t(locale, "stories.title")}</h1>
             <p className="stories-subtitle">
-              {t(locale, "stories.subtitle")}
+              {activeCategory === "community"
+                ? t(locale, "stories.tabs.communityDescription")
+                : t(locale, "stories.subtitle")}
             </p>
           </div>
           <Link className="button" href="/stories/submit">
@@ -102,16 +108,14 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
           >
             {t(locale, "stories.tabs.shelter")}
           </Link>
-          <button
-            className="stories-tab is-disabled"
-            type="button"
+          <Link
+            className={`stories-tab${activeCategory === "community" ? " is-active" : ""}`}
+            href="/stories?category=community"
             role="tab"
-            aria-selected="false"
-            aria-disabled="true"
-            disabled
+            aria-selected={activeCategory === "community"}
           >
-            {t(locale, "stories.tabs.community")} ({t(locale, "stories.tabs.comingSoon")})
-          </button>
+            {t(locale, "stories.tabs.community")}
+          </Link>
         </div>
       </header>
 
