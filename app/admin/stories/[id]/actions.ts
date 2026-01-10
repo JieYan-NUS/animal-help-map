@@ -14,6 +14,9 @@ const requireAdmin = () => {
 const getStoryId = (formData: FormData) =>
   String(formData.get("storyId") ?? "").trim();
 
+const getCategoryInput = (formData: FormData) =>
+  String(formData.get("category") ?? "").trim().toLowerCase();
+
 export const approveStory = async (formData: FormData) => {
   requireAdmin();
   const storyId = getStoryId(formData);
@@ -33,14 +36,32 @@ export const approveStory = async (formData: FormData) => {
     redirect(`/admin/stories/${storyId}?updated=error`);
   }
 
+  const allowedCategories = new Set([
+    "rescue",
+    "lost_found",
+    "shelter_foster",
+    "community"
+  ]);
+  const selectedCategoryRaw = getCategoryInput(formData);
+  const selectedCategory = allowedCategories.has(selectedCategoryRaw)
+    ? selectedCategoryRaw
+    : "";
   const categoryValue =
     typeof currentStory.category === "string"
       ? currentStory.category.trim()
       : "";
+  let categoryUpdate: string | null = null;
+  if (selectedCategory) {
+    if (selectedCategory !== categoryValue) {
+      categoryUpdate = selectedCategory;
+    }
+  } else if (!categoryValue) {
+    categoryUpdate = "rescue";
+  }
   const updatePayload = {
     status: "approved",
     published_at: new Date().toISOString(),
-    ...(categoryValue ? {} : { category: "rescue" })
+    ...(categoryUpdate ? { category: categoryUpdate } : {})
   };
 
   const { data, error } = await supabase

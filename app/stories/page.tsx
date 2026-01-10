@@ -22,21 +22,34 @@ type StoryCard = {
   }[] | null;
 };
 
-export default async function StoriesPage() {
+type StoriesPageProps = {
+  searchParams?: { category?: string };
+};
+
+export default async function StoriesPage({ searchParams }: StoriesPageProps) {
   noStore();
   const locale = getServerLocale();
   const supabase = createSupabaseClient();
+  const activeCategory =
+    searchParams?.category === "lost_found" ? "lost_found" : "rescue";
 
-  const { data, error } = await supabase
+  let storiesQuery = supabase
     .from("stories")
     .select(
       "id, slug, title, excerpt, animal_type, city, month_year, story_photos (path, sort_order, photo_type)"
     )
     .eq("status", "approved")
-    .or("category.eq.rescue,category.is.null,category.eq.")
     .not("published_at", "is", null)
     .order("published_at", { ascending: false })
     .order("sort_order", { foreignTable: "story_photos", ascending: true });
+
+  if (activeCategory === "lost_found") {
+    storiesQuery = storiesQuery.eq("category", "lost_found");
+  } else {
+    storiesQuery = storiesQuery.or("category.eq.rescue,category.is.null,category.eq.");
+  }
+
+  const { data, error } = await storiesQuery;
 
   if (error) {
     console.error("Stories fetch error:", error);
@@ -59,23 +72,31 @@ export default async function StoriesPage() {
           </Link>
         </div>
         <div className="stories-tabs" role="tablist" aria-label={t(locale, "stories.tabs.label")}>
-          <button
-            className="stories-tab is-active"
-            type="button"
+          <Link
+            className={`stories-tab${activeCategory === "rescue" ? " is-active" : ""}`}
+            href="/stories"
             role="tab"
-            aria-selected="true"
+            aria-selected={activeCategory === "rescue"}
           >
             {t(locale, "stories.tabs.rescue")}
-          </button>
-          <button
-            className="stories-tab is-disabled"
-            type="button"
+          </Link>
+          <Link
+            className={`stories-tab${activeCategory === "lost_found" ? " is-active" : ""}`}
+            href="/stories?category=lost_found"
             role="tab"
-            aria-selected="false"
-            aria-disabled="true"
-            disabled
+            aria-selected={activeCategory === "lost_found"}
           >
             {t(locale, "stories.tabs.lostFound")}
+          </Link>
+          <button
+            className="stories-tab is-disabled"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-disabled="true"
+            disabled
+          >
+            {t(locale, "stories.tabs.shelter")} ({t(locale, "stories.tabs.comingSoon")})
           </button>
           <button
             className="stories-tab is-disabled"
@@ -85,17 +106,7 @@ export default async function StoriesPage() {
             aria-disabled="true"
             disabled
           >
-            {t(locale, "stories.tabs.shelter")}
-          </button>
-          <button
-            className="stories-tab is-disabled"
-            type="button"
-            role="tab"
-            aria-selected="false"
-            aria-disabled="true"
-            disabled
-          >
-            {t(locale, "stories.tabs.community")}
+            {t(locale, "stories.tabs.community")} ({t(locale, "stories.tabs.comingSoon")})
           </button>
         </div>
       </header>

@@ -6,6 +6,8 @@ import { formatAnimalType } from "@/lib/storyUtils";
 import { isAdminRequest } from "@/lib/admin/auth";
 import { logoutAdmin } from "@/app/admin/actions";
 import { approveStory, rejectStory } from "@/app/admin/stories/[id]/actions";
+import { t } from "@/lib/i18n";
+import { getServerLocale } from "@/lib/i18n.server";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +36,7 @@ type StoryDetail = {
   created_at: string;
   published_at: string | null;
   status: "pending" | "approved" | "rejected";
+  category: string | null;
   story_photos?: StoryPhoto[] | null;
 };
 
@@ -54,11 +57,12 @@ export default async function AdminStoryDetailPage({
     redirect("/admin");
   }
 
+  const locale = getServerLocale();
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("stories")
     .select(
-      "id, slug, title, excerpt, content, animal_type, city, month_year, author_name, author_contact, created_at, published_at, status, story_photos (path, sort_order, photo_type)"
+      "id, slug, title, excerpt, content, animal_type, city, month_year, author_name, author_contact, created_at, published_at, status, category, story_photos (path, sort_order, photo_type)"
     )
     .eq("id", params.id)
     .order("sort_order", { foreignTable: "story_photos", ascending: true })
@@ -78,6 +82,10 @@ export default async function AdminStoryDetailPage({
   }
 
   const story = data as StoryDetail;
+  const categoryValue =
+    typeof story.category === "string" && story.category.trim()
+      ? story.category.trim()
+      : "rescue";
   const photos = story.story_photos ?? [];
   const photoUrls = photos.map((photo) => {
     const { data: publicData } = supabase.storage
@@ -173,6 +181,29 @@ export default async function AdminStoryDetailPage({
             <div className="admin-action-buttons">
               <form action={approveStory}>
                 <input type="hidden" name="storyId" value={story.id} />
+                <div className="admin-field">
+                  <label htmlFor="story-category">
+                    {t(locale, "admin.stories.category.label")}
+                  </label>
+                  <select
+                    id="story-category"
+                    name="category"
+                    defaultValue={categoryValue}
+                  >
+                    <option value="rescue">
+                      {t(locale, "admin.stories.category.rescue")}
+                    </option>
+                    <option value="lost_found">
+                      {t(locale, "admin.stories.category.lostFound")}
+                    </option>
+                    <option value="shelter_foster">
+                      {t(locale, "admin.stories.category.shelter")}
+                    </option>
+                    <option value="community">
+                      {t(locale, "admin.stories.category.community")}
+                    </option>
+                  </select>
+                </div>
                 <button className="button" type="submit">
                   Approve
                 </button>
