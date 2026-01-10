@@ -33,6 +33,7 @@ export default async function StoriesPage() {
       "id, slug, title, excerpt, animal_type, city, month_year, story_photos (path, sort_order, photo_type)"
     )
     .eq("status", "approved")
+    .or("category.eq.rescue,category.is.null,category.eq.")
     .not("published_at", "is", null)
     .order("published_at", { ascending: false })
     .order("sort_order", { foreignTable: "story_photos", ascending: true });
@@ -56,6 +57,46 @@ export default async function StoriesPage() {
           <Link className="button" href="/stories/submit">
             {t(locale, "stories.submitCta")}
           </Link>
+        </div>
+        <div className="stories-tabs" role="tablist" aria-label={t(locale, "stories.tabs.label")}>
+          <button
+            className="stories-tab is-active"
+            type="button"
+            role="tab"
+            aria-selected="true"
+          >
+            {t(locale, "stories.tabs.rescue")}
+          </button>
+          <button
+            className="stories-tab is-disabled"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-disabled="true"
+            disabled
+          >
+            {t(locale, "stories.tabs.lostFound")}
+          </button>
+          <button
+            className="stories-tab is-disabled"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-disabled="true"
+            disabled
+          >
+            {t(locale, "stories.tabs.shelter")}
+          </button>
+          <button
+            className="stories-tab is-disabled"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-disabled="true"
+            disabled
+          >
+            {t(locale, "stories.tabs.community")}
+          </button>
         </div>
       </header>
 

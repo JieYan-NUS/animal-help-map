@@ -22,9 +22,30 @@ export const approveStory = async (formData: FormData) => {
   }
 
   const supabase = createSupabaseAdminClient();
+  const { data: currentStory, error: fetchError } = await supabase
+    .from("stories")
+    .select("slug, category")
+    .eq("id", storyId)
+    .single();
+
+  if (fetchError || !currentStory?.slug) {
+    console.error("Approve story fetch error:", fetchError);
+    redirect(`/admin/stories/${storyId}?updated=error`);
+  }
+
+  const categoryValue =
+    typeof currentStory.category === "string"
+      ? currentStory.category.trim()
+      : "";
+  const updatePayload = {
+    status: "approved",
+    published_at: new Date().toISOString(),
+    ...(categoryValue ? {} : { category: "rescue" })
+  };
+
   const { data, error } = await supabase
     .from("stories")
-    .update({ status: "approved", published_at: new Date().toISOString() })
+    .update(updatePayload)
     .eq("id", storyId)
     .select("slug")
     .single();
