@@ -31,7 +31,11 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
   const locale = getServerLocale();
   const supabase = createSupabaseClient();
   const activeCategory =
-    searchParams?.category === "lost_found" ? "lost_found" : "rescue";
+    searchParams?.category === "lost_found"
+      ? "lost_found"
+      : searchParams?.category === "shelter_foster"
+        ? "shelter_foster"
+        : "rescue";
 
   let storiesQuery = supabase
     .from("stories")
@@ -45,6 +49,8 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
 
   if (activeCategory === "lost_found") {
     storiesQuery = storiesQuery.eq("category", "lost_found");
+  } else if (activeCategory === "shelter_foster") {
+    storiesQuery = storiesQuery.eq("category", "shelter_foster");
   } else {
     storiesQuery = storiesQuery.or("category.eq.rescue,category.is.null,category.eq.");
   }
@@ -88,16 +94,14 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
           >
             {t(locale, "stories.tabs.lostFound")}
           </Link>
-          <button
-            className="stories-tab is-disabled"
-            type="button"
+          <Link
+            className={`stories-tab${activeCategory === "shelter_foster" ? " is-active" : ""}`}
+            href="/stories?category=shelter_foster"
             role="tab"
-            aria-selected="false"
-            aria-disabled="true"
-            disabled
+            aria-selected={activeCategory === "shelter_foster"}
           >
-            {t(locale, "stories.tabs.shelter")} ({t(locale, "stories.tabs.comingSoon")})
-          </button>
+            {t(locale, "stories.tabs.shelter")}
+          </Link>
           <button
             className="stories-tab is-disabled"
             type="button"
