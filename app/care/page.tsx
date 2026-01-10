@@ -5,10 +5,10 @@ import { getServerLocale } from "@/lib/i18n.server";
 export default function CarePage() {
   const locale = getServerLocale();
   const cards = [
-    { key: "basics" },
-    { key: "need" },
-    { key: "lost" },
-    { key: "adoption" },
+    { key: "basics", href: "/care/basics" },
+    { key: "need", href: "/care/animals-in-need" },
+    { key: "lost", href: "/care/lost-found" },
+    { key: "adoption", href: "/care/adoption" },
     { key: "library", href: "/care/library" }
   ] as const;
 
@@ -23,19 +23,11 @@ export default function CarePage() {
         {cards.map((card) => {
           const title = t(locale, `care.cards.${card.key}.title`);
           const body = t(locale, `care.cards.${card.key}.body`);
-          if ("href" in card) {
-            return (
-              <Link className="care-card" href={card.href} key={card.key}>
-                <h3>{title}</h3>
-                <p>{body}</p>
-              </Link>
-            );
-          }
           return (
-            <div className="care-card is-disabled" key={card.key}>
+            <Link className="care-card" href={card.href} key={card.key}>
               <h3>{title}</h3>
               <p>{body}</p>
-            </div>
+            </Link>
           );
         })}
       </section>

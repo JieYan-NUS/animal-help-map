@@ -33,6 +33,119 @@ export const translations: TranslationMap = {
     "care.cards.library.title": "Learning Library",
     "care.cards.library.body":
       "Deeper, structured learning materials—species basics, behavior, and care—curated from reliable sources.",
+    "care.pages.basics.title": "Care Basics",
+    "care.pages.basics.intro":
+      "Quiet, practical checklists for everyday situations — what to do, what not to do, and when to ask for help.",
+    "care.pages.basics.sections.before.title": "Before You Act",
+    "care.pages.basics.sections.before.bullets.1":
+      "Pause and observe from a safe distance.",
+    "care.pages.basics.sections.before.bullets.2":
+      "Look for signs of injury, fear, or aggression.",
+    "care.pages.basics.sections.before.bullets.3":
+      "Avoid sudden movements or loud noises.",
+    "care.pages.basics.sections.simple_help.title": "Simple Help You Can Offer",
+    "care.pages.basics.sections.simple_help.bullets.1":
+      "Fresh water placed nearby (not forced).",
+    "care.pages.basics.sections.simple_help.bullets.2":
+      "Shade or a quiet corner away from crowds.",
+    "care.pages.basics.sections.simple_help.bullets.3":
+      "Space — sometimes distance is the best help.",
+    "care.pages.basics.sections.avoid.title": "What Not to Do",
+    "care.pages.basics.sections.avoid.bullets.1":
+      "Do not chase or corner an animal.",
+    "care.pages.basics.sections.avoid.bullets.2":
+      "Do not feed human food unless you’re sure it’s safe.",
+    "care.pages.basics.sections.avoid.bullets.3":
+      "Do not assume friendliness, even if the animal looks calm.",
+    "care.pages.basics.sections.seek_help.title": "When to Seek Help",
+    "care.pages.basics.sections.seek_help.bullets.1":
+      "Visible wounds, limping, or bleeding.",
+    "care.pages.basics.sections.seek_help.bullets.2":
+      "Extreme lethargy or collapse.",
+    "care.pages.basics.sections.seek_help.bullets.3":
+      "Situations involving traffic, construction, or children.",
+    "care.pages.basics.note":
+      "Pawscue is here to help you decide calmly — not to rush you into action.",
+    "care.pages.animals_in_need.title": "Animals in Need",
+    "care.pages.animals_in_need.intro":
+      "How to respond when you encounter an animal that may be injured, sick, or distressed — calmly and safely.",
+    "care.pages.animals_in_need.sections.assess.title": "Assess the Situation",
+    "care.pages.animals_in_need.sections.assess.bullets.1":
+      "Is the animal moving normally?",
+    "care.pages.animals_in_need.sections.assess.bullets.2":
+      "Is it alert, hiding, or unable to stand?",
+    "care.pages.animals_in_need.sections.assess.bullets.3":
+      "Are there immediate dangers nearby?",
+    "care.pages.animals_in_need.sections.safe.title": "If It’s Safe",
+    "care.pages.animals_in_need.sections.safe.bullets.1":
+      "Keep others (and pets) at a distance.",
+    "care.pages.animals_in_need.sections.safe.bullets.2":
+      "Take note of the exact location and time.",
+    "care.pages.animals_in_need.sections.safe.bullets.3":
+      "If possible, take a clear photo without approaching.",
+    "care.pages.animals_in_need.sections.reporting.title": "Reporting Through Pawscue",
+    "care.pages.animals_in_need.sections.reporting.bullets.1":
+      "Share what you see, not assumptions.",
+    "care.pages.animals_in_need.sections.reporting.bullets.2":
+      "Location matters more than conclusions.",
+    "care.pages.animals_in_need.sections.reporting.bullets.3":
+      "Updates help helpers respond effectively.",
+    "care.pages.animals_in_need.sections.reminder.title": "Important Reminder",
+    "care.pages.animals_in_need.sections.reminder.bullets.1":
+      "Not every animal needs intervention.",
+    "care.pages.animals_in_need.sections.reminder.bullets.2":
+      "Observation and information are often the most valuable help.",
+    "care.pages.lost_found.title": "Lost & Found",
+    "care.pages.lost_found.intro":
+      "Guidance for the critical first hours and days after a pet goes missing — or when you find one and want to help it get home.",
+    "care.pages.lost_found.sections.lost_pet.title": "If Your Pet Is Lost",
+    "care.pages.lost_found.sections.lost_pet.bullets.1":
+      "Search nearby first — pets often stay close.",
+    "care.pages.lost_found.sections.lost_pet.bullets.2":
+      "Check familiar hiding spots.",
+    "care.pages.lost_found.sections.lost_pet.bullets.3":
+      "Contact neighbors, shelters, and clinics early.",
+    "care.pages.lost_found.sections.found_pet.title": "If You Find a Lost Pet",
+    "care.pages.lost_found.sections.found_pet.bullets.1":
+      "Approach slowly and calmly.",
+    "care.pages.lost_found.sections.found_pet.bullets.2":
+      "Check for tags or identification if safe.",
+    "care.pages.lost_found.sections.found_pet.bullets.3":
+      "Do not assume abandonment.",
+    "care.pages.lost_found.sections.sharing.title": "Sharing Information",
+    "care.pages.lost_found.sections.sharing.bullets.1": "Clear photos are essential.",
+    "care.pages.lost_found.sections.sharing.bullets.2":
+      "Include last-seen location and time.",
+    "care.pages.lost_found.sections.sharing.bullets.3":
+      "Small details can make a big difference.",
+    "care.pages.lost_found.note":
+      "Pawscue exists to connect people — not to judge situations.",
+    "care.pages.adoption.title": "Adoption & Long-term Care",
+    "care.pages.adoption.intro":
+      "Thoughtful guidance for those considering adoption — and for building a stable, responsible life with an animal.",
+    "care.pages.adoption.sections.decide.title": "Before You Decide",
+    "care.pages.adoption.sections.decide.bullets.1":
+      "Consider time, finances, and routine.",
+    "care.pages.adoption.sections.decide.bullets.2":
+      "Adoption is a long-term commitment.",
+    "care.pages.adoption.sections.decide.bullets.3":
+      "Choose a pace that fits your life.",
+    "care.pages.adoption.sections.prepare.title": "Preparing Your Home",
+    "care.pages.adoption.sections.prepare.bullets.1":
+      "Create a quiet, safe starter space.",
+    "care.pages.adoption.sections.prepare.bullets.2":
+      "Keep routines simple at first.",
+    "care.pages.adoption.sections.prepare.bullets.3":
+      "Allow time for adjustment.",
+    "care.pages.adoption.sections.long_term.title": "Long-term Responsibility",
+    "care.pages.adoption.sections.long_term.bullets.1":
+      "Regular food, care, and medical needs.",
+    "care.pages.adoption.sections.long_term.bullets.2":
+      "Patience with behavior changes.",
+    "care.pages.adoption.sections.long_term.bullets.3":
+      "Respect the animal’s personality.",
+    "care.pages.adoption.note":
+      "Adoption is not about saving — it’s about living together well.",
     "care.library.page.title": "Learning Library",
     "care.library.page.subtitle":
       "Deeper, structured notes curated from reliable sources—designed to stay calm and practical.",
@@ -309,6 +422,110 @@ export const translations: TranslationMap = {
     "care.cards.library.title": "学习资料库",
     "care.cards.library.body":
       "更系统的学习内容：不同动物的基础知识、行为理解与照护要点，整理自可靠资料。",
+    "care.pages.basics.title": "基础照护",
+    "care.pages.basics.intro":
+      "安静、实用的基础指引，帮助你判断当下该做什么、不该做什么，以及什么时候需要求助。",
+    "care.pages.basics.sections.before.title": "行动之前",
+    "care.pages.basics.sections.before.bullets.1":
+      "先停下来，从安全距离观察。",
+    "care.pages.basics.sections.before.bullets.2":
+      "留意是否有受伤、恐惧或攻击性迹象。",
+    "care.pages.basics.sections.before.bullets.3":
+      "避免突然动作或制造噪音。",
+    "care.pages.basics.sections.simple_help.title": "可以提供的简单帮助",
+    "care.pages.basics.sections.simple_help.bullets.1":
+      "在附近放置清水（不强迫）。",
+    "care.pages.basics.sections.simple_help.bullets.2":
+      "提供阴凉或安静、不被打扰的角落。",
+    "care.pages.basics.sections.simple_help.bullets.3":
+      "保持距离——有时不打扰就是最好的帮助。",
+    "care.pages.basics.sections.avoid.title": "不建议做的事",
+    "care.pages.basics.sections.avoid.bullets.1": "不要追逐或逼近动物。",
+    "care.pages.basics.sections.avoid.bullets.2": "不要随意喂食人类食物。",
+    "care.pages.basics.sections.avoid.bullets.3":
+      "不要因为外表温顺就放松警惕。",
+    "care.pages.basics.sections.seek_help.title": "何时需要求助",
+    "care.pages.basics.sections.seek_help.bullets.1": "明显受伤、跛行或出血。",
+    "care.pages.basics.sections.seek_help.bullets.2": "极度虚弱、倒地不起。",
+    "care.pages.basics.sections.seek_help.bullets.3":
+      "周围存在车流、施工或儿童等风险环境。",
+    "care.pages.basics.note": "Pawscue 希望帮助你冷静判断，而不是催促你行动。",
+    "care.pages.animals_in_need.title": "需要帮助的动物",
+    "care.pages.animals_in_need.intro":
+      "当你遇到可能受伤、生病或受惊的动物时，如何冷静、安全地应对。",
+    "care.pages.animals_in_need.sections.assess.title": "先判断情况",
+    "care.pages.animals_in_need.sections.assess.bullets.1":
+      "动物是否能正常行动？",
+    "care.pages.animals_in_need.sections.assess.bullets.2":
+      "是否清醒、躲藏，或无法站立？",
+    "care.pages.animals_in_need.sections.assess.bullets.3":
+      "周围是否存在即时危险？",
+    "care.pages.animals_in_need.sections.safe.title": "在确保安全的前提下",
+    "care.pages.animals_in_need.sections.safe.bullets.1":
+      "请他人和宠物保持距离。",
+    "care.pages.animals_in_need.sections.safe.bullets.2":
+      "记录准确位置与时间。",
+    "care.pages.animals_in_need.sections.safe.bullets.3":
+      "若可以，在不靠近的情况下拍摄清晰照片。",
+    "care.pages.animals_in_need.sections.reporting.title": "通过 Pawscue 提交信息",
+    "care.pages.animals_in_need.sections.reporting.bullets.1":
+      "描述你看到的事实，而不是推测。",
+    "care.pages.animals_in_need.sections.reporting.bullets.2":
+      "位置信息比结论更重要。",
+    "care.pages.animals_in_need.sections.reporting.bullets.3":
+      "后续更新有助于救助者判断。",
+    "care.pages.animals_in_need.sections.reminder.title": "重要提醒",
+    "care.pages.animals_in_need.sections.reminder.bullets.1":
+      "并非所有动物都需要被立即干预。",
+    "care.pages.animals_in_need.sections.reminder.bullets.2":
+      "有时，冷静观察和准确记录就是最大的帮助。",
+    "care.pages.lost_found.title": "走失与寻回",
+    "care.pages.lost_found.intro":
+      "当宠物走失，或你发现一只疑似走失的动物时，前几个小时和几天尤为关键。",
+    "care.pages.lost_found.sections.lost_pet.title": "如果你的宠物走失",
+    "care.pages.lost_found.sections.lost_pet.bullets.1":
+      "先从附近开始寻找，宠物通常不会走远。",
+    "care.pages.lost_found.sections.lost_pet.bullets.2":
+      "查看熟悉的躲藏地点。",
+    "care.pages.lost_found.sections.lost_pet.bullets.3":
+      "尽早联系邻居、收容所和宠物诊所。",
+    "care.pages.lost_found.sections.found_pet.title": "如果你发现走失的宠物",
+    "care.pages.lost_found.sections.found_pet.bullets.1":
+      "缓慢、温和地靠近。",
+    "care.pages.lost_found.sections.found_pet.bullets.2":
+      "在安全情况下查看项圈或身份信息。",
+    "care.pages.lost_found.sections.found_pet.bullets.3":
+      "不要轻易判断为被遗弃。",
+    "care.pages.lost_found.sections.sharing.title": "信息分享很重要",
+    "care.pages.lost_found.sections.sharing.bullets.1": "提供清晰照片。",
+    "care.pages.lost_found.sections.sharing.bullets.2":
+      "标注最后出现的时间与地点。",
+    "care.pages.lost_found.sections.sharing.bullets.3": "细节往往决定结果。",
+    "care.pages.lost_found.note": "Pawscue 的存在，是为了连接彼此，而不是评判对错。",
+    "care.pages.adoption.title": "领养与长期照护",
+    "care.pages.adoption.intro":
+      "为正在考虑领养，或希望与动物建立长期稳定生活的人提供的温和指引。",
+    "care.pages.adoption.sections.decide.title": "做决定之前",
+    "care.pages.adoption.sections.decide.bullets.1":
+      "认真考虑时间、经济与生活节奏。",
+    "care.pages.adoption.sections.decide.bullets.2": "领养是一项长期承诺。",
+    "care.pages.adoption.sections.decide.bullets.3":
+      "选择适合你生活状态的方式。",
+    "care.pages.adoption.sections.prepare.title": "为新生活做准备",
+    "care.pages.adoption.sections.prepare.bullets.1":
+      "准备一个安静、安全的起始空间。",
+    "care.pages.adoption.sections.prepare.bullets.2":
+      "初期保持简单、稳定的作息。",
+    "care.pages.adoption.sections.prepare.bullets.3":
+      "给彼此足够的适应时间。",
+    "care.pages.adoption.sections.long_term.title": "长期的责任",
+    "care.pages.adoption.sections.long_term.bullets.1":
+      "持续的饮食、照护与医疗需求。",
+    "care.pages.adoption.sections.long_term.bullets.2":
+      "对行为变化保持耐心。",
+    "care.pages.adoption.sections.long_term.bullets.3":
+      "尊重每个动物独特的性格。",
+    "care.pages.adoption.note": "领养不是拯救，而是共同生活的开始。",
     "care.library.page.title": "学习资料库",
     "care.library.page.subtitle":
       "整理自可靠资料的系统化笔记——保持冷静、实用的表达方式。",
