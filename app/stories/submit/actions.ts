@@ -38,6 +38,8 @@ export async function submitStory(
   const content = getString(formData, "content");
   const authorName = getString(formData, "author_name");
   const authorContact = getString(formData, "author_contact");
+  const categoryInput = getString(formData, "category");
+  const category = categoryInput ? categoryInput.toLowerCase() : "rescue";
   const consent = formData.get("consent");
 
   if (!title) fieldErrors.title = t(locale, "stories.error.titleRequired");
@@ -112,6 +114,7 @@ export async function submitStory(
     content,
     author_name: authorName || null,
     author_contact: authorContact || null,
+    category,
     status: "pending"
   };
 

@@ -355,6 +355,36 @@ p {
   font-size: 1.05rem;
 }
 
+.stories-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.stories-tab {
+  border-radius: 999px;
+  border: 1px solid #eadbc8;
+  background: #fff;
+  padding: 0.45rem 1rem;
+  font-weight: 600;
+  color: #6b635b;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.stories-tab.is-active {
+  background: #fff4e6;
+  color: #7a4d2c;
+  border-color: #efd6bb;
+}
+
+.stories-tab.is-disabled {
+  background: #fbf7f1;
+  color: #b1a59a;
+  border-color: #efe2d5;
+  cursor: not-allowed;
+}
+
 .stories-grid {
   display: grid;
   gap: 1.5rem;
@@ -844,6 +874,27 @@ p {
 .admin-actions {
   display: grid;
   gap: 0.75rem;
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.admin-field label {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #4a4038;
+}
+
+.admin-field select {
+  border-radius: 10px;
+  border: 1px solid #e4d3bf;
+  padding: 0.5rem 0.75rem;
+  background: #fff;
+  color: #3f352d;
 }
 
 .admin-button {
