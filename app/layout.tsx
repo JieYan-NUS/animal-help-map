@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LanguageToggle from "@/components/LanguageToggle";
-import { getServerLocale, t } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
+import { getServerLocale } from "@/lib/i18n.server";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ export default function RootLayout({
           <Link href="/report">{t(locale, "nav.report")}</Link>
           <Link href="/map">{t(locale, "nav.map")}</Link>
           <Link href="/stories">{t(locale, "nav.stories")}</Link>
+          <Link href="/care">{t(locale, "nav.care")}</Link>
           <div style={{ marginLeft: "auto" }}>
             <LanguageToggle currentLocale={locale} />
           </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import StorySubmitForm from "./StorySubmitForm";
-import { getServerLocale, t } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
+import { getServerLocale } from "@/lib/i18n.server";
 
 export default function StorySubmitPage() {
   const locale = getServerLocale();

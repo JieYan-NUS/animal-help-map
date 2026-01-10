@@ -5,7 +5,8 @@ import { notFound } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { formatAnimalType, getStoryPhotoUrl } from "@/lib/storyUtils";
 import BeforeAfterSlider from "../BeforeAfterSlider";
-import { getServerLocale, t } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
+import { getServerLocale } from "@/lib/i18n.server";
 
 type PageProps = {
   params: { slug: string };

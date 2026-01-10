@@ -81,7 +81,7 @@ export const isAdminRequest = () => {
 
     const ageSeconds = (Date.now() - decoded.ts) / 1000;
     return ageSeconds >= 0 && ageSeconds <= MAX_AGE_SECONDS;
-  } catch (error) {
+  } catch {
     return false;
   }
 };

@@ -2,8 +2,6 @@ export type Locale = "en" | "zh";
 
 export const LOCALE_COOKIE = "pawscue_locale";
 
-const SUPPORTED_LOCALES: Locale[] = ["en", "zh"];
-
 export const isLocale = (value: unknown): value is Locale => value === "en" || value === "zh";
 
 type Translations = Record<string, string>;
@@ -16,6 +14,57 @@ export const translations: TranslationMap = {
     "nav.map": "Map",
     "nav.report": "Report",
     "nav.stories": "Stories",
+    "nav.care": "Care",
+    "care.page.title": "Care Basics",
+    "care.page.subtitle":
+      "Quiet, practical guides for helping animals—before emergencies and during them.",
+    "care.cards.basics.title": "Care Basics",
+    "care.cards.basics.body":
+      "Short, practical checklists for common situations—what to do, what not to do, and when to ask for help.",
+    "care.cards.need.title": "Animals in Need",
+    "care.cards.need.body":
+      "How to respond when you encounter an animal that may be injured, sick, or distressed—calmly and safely.",
+    "care.cards.lost.title": "Lost & Found",
+    "care.cards.lost.body":
+      "Guidance for the first hours and days after a pet goes missing—or when you find one and want to help it get home.",
+    "care.cards.adoption.title": "Adoption & Long-term Care",
+    "care.cards.adoption.body":
+      "Things to consider before adopting, and how to prepare for a stable, responsible life with an animal.",
+    "care.cards.library.title": "Learning Library",
+    "care.cards.library.body":
+      "Deeper, structured learning materials—species basics, behavior, and care—curated from reliable sources.",
+    "care.library.page.title": "Learning Library",
+    "care.library.page.subtitle":
+      "Deeper, structured notes curated from reliable sources—designed to stay calm and practical.",
+    "care.library.cards.species.title": "Species Basics",
+    "care.library.cards.species.body":
+      "Essential knowledge for different animals—dogs, cats, birds, and small animals—before and after adoption.",
+    "care.library.cards.health.title": "Health & First Response",
+    "care.library.cards.health.body":
+      "How to recognize warning signs and understand when professional veterinary help is needed.",
+    "care.library.cards.behavior.title": "Behavior & Handling",
+    "care.library.cards.behavior.body":
+      "Understanding fear, stress, and body language—so interactions remain safe for both people and animals.",
+    "care.library.cards.resources.title": "Community & Local Resources",
+    "care.library.cards.resources.body":
+      "Shelters, rescue groups, and community support—where to turn when you need help beyond Pawscue.",
+    "care.footer.note":
+      "These guides are for general reference. For emergencies or medical concerns, contact a veterinarian or local rescue.",
+    "care.title": "Care Basics",
+    "care.subtitle":
+      "Quiet, practical guides for helping animals—before emergencies and during them.",
+    "care.section1.title": "If you find an animal in need",
+    "care.section1.bullets.1": "Stay calm, keep distance, and observe first.",
+    "care.section1.bullets.2": "Note location and time to share with helpers.",
+    "care.section1.bullets.3": "If safe, offer water and a quiet corner.",
+    "care.section2.title": "If a pet is lost",
+    "care.section2.bullets.1": "Ask neighbors and nearby shelters first.",
+    "care.section2.bullets.2": "Leave familiar bedding or scent nearby.",
+    "care.section2.bullets.3": "Share a clear photo and last-seen details.",
+    "care.section3.title": "Thinking about adoption",
+    "care.section3.bullets.1": "Consider time, budget, and daily routine.",
+    "care.section3.bullets.2": "Meet the animal and ask about temperament.",
+    "care.section3.bullets.3": "Prepare a quiet starter space at home.",
     "map.title": "Animals on the Map",
     "map.subtitle":
       "Reports appear as pins so you can see where help is needed and share with nearby helpers.",
@@ -241,6 +290,57 @@ export const translations: TranslationMap = {
     "nav.map": "地图",
     "nav.report": "报告",
     "nav.stories": "故事",
+    "nav.care": "照护",
+    "care.page.title": "照护指南",
+    "care.page.subtitle":
+      "安静、实用的照护指南——在紧急情况发生前与发生时，都能帮上忙。",
+    "care.cards.basics.title": "基础照护",
+    "care.cards.basics.body":
+      "针对常见情况的简明实用指南：该做什么、不该做什么，以及何时寻求帮助。",
+    "care.cards.need.title": "动物求助",
+    "care.cards.need.body":
+      "当你遇到可能受伤、生病或受困的动物时，如何冷静、安全地应对。",
+    "care.cards.lost.title": "走失与寻回",
+    "care.cards.lost.body":
+      "宠物走失后的关键应对步骤，或当你发现走失动物时，如何帮助它回家。",
+    "care.cards.adoption.title": "领养与长期照护",
+    "care.cards.adoption.body":
+      "在领养前需要思考的要点，以及如何为动物准备一个稳定、负责任的生活环境。",
+    "care.cards.library.title": "学习资料库",
+    "care.cards.library.body":
+      "更系统的学习内容：不同动物的基础知识、行为理解与照护要点，整理自可靠资料。",
+    "care.library.page.title": "学习资料库",
+    "care.library.page.subtitle":
+      "整理自可靠资料的系统化笔记——保持冷静、实用的表达方式。",
+    "care.library.cards.species.title": "物种基础",
+    "care.library.cards.species.body":
+      "不同动物（狗、猫、鸟类、小型动物）的基础照护知识，适用于领养前与日常照料。",
+    "care.library.cards.health.title": "健康与应急处理",
+    "care.library.cards.health.body":
+      "如何识别危险信号，以及在什么情况下应立即寻求专业兽医帮助。",
+    "care.library.cards.behavior.title": "行为与接触方式",
+    "care.library.cards.behavior.body":
+      "理解动物的恐惧、压力与肢体信号，让人与动物的接触更安全。",
+    "care.library.cards.resources.title": "社区与本地资源",
+    "care.library.cards.resources.body":
+      "收容所、救助组织与社区资源，当 Pawscue 之外仍需要更多支持时的参考。",
+    "care.footer.note":
+      "本页面内容仅供参考。如遇紧急或医疗问题，请联系兽医或当地救助机构。",
+    "care.title": "关怀指南",
+    "care.subtitle":
+      "温和、实用的帮助指南——在紧急情况之前与发生时都用得上。",
+    "care.section1.title": "遇到需要帮助的动物",
+    "care.section1.bullets.1": "保持冷静，留出距离，先观察。",
+    "care.section1.bullets.2": "记下位置和时间，分享给附近的协助者。",
+    "care.section1.bullets.3": "在安全前提下，提供清水和安静角落。",
+    "care.section2.title": "宠物走失怎么办",
+    "care.section2.bullets.1": "先联系邻里和附近的救助点。",
+    "care.section2.bullets.2": "在附近放熟悉的垫子或气味。",
+    "care.section2.bullets.3": "分享清晰照片与最后出现地点。",
+    "care.section3.title": "考虑领养之前",
+    "care.section3.bullets.1": "评估时间、预算和日常安排。",
+    "care.section3.bullets.2": "了解动物性格并当面相处。",
+    "care.section3.bullets.3": "先布置一个安静的适应空间。",
     "map.title": "动物救助地图",
     "map.subtitle": "每条报告都会变成地图上的标记，方便你查看需要帮助的位置并分享给附近的伙伴。",
     "map.heading": "需要帮助的动物",
@@ -443,22 +543,6 @@ export const translations: TranslationMap = {
     "home.footerLead": "开源项目，许可证：",
     "home.footerTail": "。为社区关怀与透明而建。"
   }
-};
-
-export const detectLocaleFromAcceptLanguage = (headerValue: string | null): Locale => {
-  if (!headerValue) return "en";
-  const primary = headerValue.split(",")[0]?.trim().toLowerCase() ?? "";
-  return primary.startsWith("zh") ? "zh" : "en";
-};
-
-export const getServerLocale = (): Locale => {
-  const { cookies } = require("next/headers") as typeof import("next/headers");
-  const cookieStore = cookies();
-  const cookieValue = cookieStore.get(LOCALE_COOKIE)?.value as Locale | undefined;
-  if (cookieValue && SUPPORTED_LOCALES.includes(cookieValue)) {
-    return cookieValue;
-  }
-  return "en";
 };
 
 export const t = (locale: Locale, key: string): string => {

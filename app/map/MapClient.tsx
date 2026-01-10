@@ -5,6 +5,8 @@ import { useMap } from "react-leaflet";
 import dynamic from "next/dynamic";
 import { derivePlaceLabel, formatReportTimestamp } from "@/lib/reportTime";
 import { t, type Locale } from "@/lib/i18n";
+import type * as Leaflet from "leaflet";
+import type { DivIcon, Icon } from "leaflet";
 
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
@@ -17,7 +19,6 @@ const Marker = dynamic(() => import("react-leaflet").then(m => m.Marker), { ssr:
 const Popup = dynamic(() => import("react-leaflet").then(m => m.Popup), { ssr: false });
 
 // IMPORTANT: leaflet itself must be imported only on client
-let L: any = null;
 
 type Report = {
   id?: string | number;
@@ -156,10 +157,10 @@ export default function MapClient({ locale }: { locale: Locale }) {
   const [reports, setReports] = useState<Report[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [markerIcons, setMarkerIcons] = useState<{
-    default: any;
-    latest: any;
-    lost: any;
-    lostLatest: any;
+    default: Icon | DivIcon;
+    latest: Icon | DivIcon;
+    lost: Icon | DivIcon;
+    lostLatest: Icon | DivIcon;
   } | null>(null);
   const activeReports = useMemo(
     () => reports.filter((report) => report.status === "Reported"),
@@ -206,9 +207,8 @@ export default function MapClient({ locale }: { locale: Locale }) {
     (async () => {
       const leaflet = await import("leaflet");
       await import("leaflet.markercluster"); // attaches to leaflet
-      L = leaflet.default ?? leaflet;
-
-      const defaultIcon = L.icon({
+      const leafletApi = (leaflet.default ?? leaflet) as typeof Leaflet;
+      const defaultIcon = leafletApi.icon({
         iconUrl: "/paw-heart-marker.svg",
         iconRetinaUrl: "/paw-heart-marker.svg",
         iconSize: [52, 68],
@@ -216,7 +216,7 @@ export default function MapClient({ locale }: { locale: Locale }) {
         popupAnchor: [0, -56],
       });
 
-      const latestIcon = L.divIcon({
+      const latestIcon = leafletApi.divIcon({
         className: "latestMarkerIcon",
         html: `
           <div style="width:64px;height:84px;display:flex;align-items:center;justify-content:center;">
@@ -228,7 +228,7 @@ export default function MapClient({ locale }: { locale: Locale }) {
         popupAnchor: [0, -70],
       });
 
-      const lostIcon = L.divIcon({
+      const lostIcon = leafletApi.divIcon({
         className: "lostMarkerIcon",
         html: `
           <div class="lost-marker" style="--marker-width:52px;--marker-height:68px;"></div>
@@ -238,7 +238,7 @@ export default function MapClient({ locale }: { locale: Locale }) {
         popupAnchor: [0, -56],
       });
 
-      const lostLatestIcon = L.divIcon({
+      const lostLatestIcon = leafletApi.divIcon({
         className: "lostLatestMarkerIcon",
         html: `
           <div class="lost-marker lost-marker--latest" style="--marker-width:64px;--marker-height:84px;"></div>
@@ -248,10 +248,20 @@ export default function MapClient({ locale }: { locale: Locale }) {
         popupAnchor: [0, -70],
       });
 
-      L.Marker.prototype.options.icon = defaultIcon;
-      if (L.MarkerClusterGroup?.prototype?.options) {
-        L.MarkerClusterGroup.prototype.options.iconCreateFunction = (cluster: any) =>
-          L.divIcon({
+      const MarkerClusterGroup = (leafletApi as unknown as {
+        MarkerClusterGroup?: {
+          prototype?: {
+            options?: {
+              iconCreateFunction?: (cluster: { getChildCount: () => number }) => DivIcon;
+            };
+          };
+        };
+      }).MarkerClusterGroup;
+
+      leafletApi.Marker.prototype.options.icon = defaultIcon;
+      if (MarkerClusterGroup?.prototype?.options) {
+        MarkerClusterGroup.prototype.options.iconCreateFunction = (cluster: { getChildCount: () => number }) =>
+          leafletApi.divIcon({
             className: "pawClusterIcon",
             html: `
               <div style="position:relative;width:58px;height:58px;display:flex;align-items:center;justify-content:center;background:url('/paw-heart-marker.svg') no-repeat center/contain;">
@@ -281,8 +291,17 @@ export default function MapClient({ locale }: { locale: Locale }) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setReports(Array.isArray(data) ? data : data?.reports ?? []);
-      } catch (e: any) {
-        setError(e?.message ?? t(locale, "map.loadError"));
+      } catch (e: unknown) {
+        const message =
+          e instanceof Error
+            ? e.message
+            : typeof e === "object" &&
+                e !== null &&
+                "message" in e &&
+                typeof (e as { message?: unknown }).message === "string"
+              ? (e as { message: string }).message
+              : t(locale, "map.loadError");
+        setError(message);
       }
     })();
   }, [locale]);

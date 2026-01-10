@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getServerLocale, t } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
+import { getServerLocale } from "@/lib/i18n.server";
 
 export default function HomePage() {
   const locale = getServerLocale();

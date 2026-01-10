@@ -73,6 +73,67 @@ h1 {
   font-size: 2.2rem;
 }
 
+.care-header {
+  margin-bottom: 1.5rem;
+}
+
+.care-subtitle {
+  margin: 0;
+  color: #4a4038;
+  max-width: 36rem;
+}
+
+.care-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-top: 1.5rem;
+}
+
+.care-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.25rem 1.3rem;
+  border-radius: 14px;
+  border: 1px solid #eadbc8;
+  background: #fff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.care-card h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.care-card p {
+  margin: 0;
+  color: #4a4038;
+}
+
+.care-card:hover {
+  transform: translateY(-2px);
+  border-color: #cfa576;
+  box-shadow: 0 10px 24px rgba(98, 60, 31, 0.12);
+}
+
+.care-card:focus-visible {
+  outline: 2px solid #8a4f25;
+  outline-offset: 2px;
+  box-shadow: 0 6px 16px rgba(94, 58, 31, 0.2);
+}
+
+.care-card.is-disabled {
+  cursor: default;
+  background: #fffaf4;
+}
+
+.care-card.is-disabled:hover {
+  transform: none;
+  border-color: #eadbc8;
+  box-shadow: none;
+}
+
 .hero {
   position: relative;
   width: 100vw;

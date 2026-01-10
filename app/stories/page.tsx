@@ -4,7 +4,8 @@ import { unstable_noStore as noStore } from "next/cache";
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { formatAnimalType, getStoryPhotoUrl } from "@/lib/storyUtils";
 import BeforeAfterSlider from "./BeforeAfterSlider";
-import { getServerLocale, t } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
+import { getServerLocale } from "@/lib/i18n.server";
 
 type StoryCard = {
   id: string;

@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic";
-import { getServerLocale } from "@/lib/i18n";
+import { getServerLocale } from "@/lib/i18n.server";
 
 const MapClient = dynamic(() => import("./MapClient"), { ssr: false });
 
