@@ -15,6 +15,7 @@ export const translations: TranslationMap = {
     "nav.report": "Report",
     "nav.stories": "Stories",
     "nav.care": "Care",
+    "footer.contact": "Contact:",
     "care.page.title": "Care Basics",
     "care.page.subtitle":
       "Quiet, practical guides for helping animals—before emergencies and during them.",
@@ -439,6 +440,7 @@ export const translations: TranslationMap = {
     "nav.report": "报告",
     "nav.stories": "故事",
     "nav.care": "照护",
+    "footer.contact": "联系方式：",
     "care.page.title": "照护指南",
     "care.page.subtitle":
       "安静、实用的照护指南——在紧急情况发生前与发生时，都能帮上忙。",

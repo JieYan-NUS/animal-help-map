@@ -64,6 +64,18 @@ nav a:hover {
   border-bottom-color: #c07d47;
 }
 
+.site-footer {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 1.5rem 2.5rem;
+  color: #6b5d52;
+}
+
+.site-footer__contact {
+  display: inline-block;
+  font-size: 0.9rem;
+}
+
 h2 {
   margin: 1.5rem 0 0.5rem;
 }

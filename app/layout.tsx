@@ -17,6 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const locale = getServerLocale();
+  const contactEmail = "pawscueglobal@gmail.com";
   return (
     <html lang={locale}>
       <body>
@@ -31,6 +32,12 @@ export default function RootLayout({
           </div>
         </nav>
         <main>{children}</main>
+        <footer className="site-footer">
+          <small className="site-footer__contact">
+            {t(locale, "footer.contact")}{" "}
+            <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+          </small>
+        </footer>
       </body>
     </html>
   );
