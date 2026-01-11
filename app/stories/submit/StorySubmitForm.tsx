@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { submitStory, type StoryFormState } from "./actions";
 import { t, type Locale } from "@/lib/i18n";
+import {
+  DEFAULT_STORY_CATEGORY,
+  STORY_CATEGORIES,
+  type StoryCategory
+} from "@/lib/storyCategories";
 
 const initialState: StoryFormState = { status: "idle" };
 
@@ -14,12 +19,10 @@ const animalOptions = [
   { value: "other", labelKey: "stories.form.animalOptions.other" }
 ];
 
-const categoryOptions = [
-  { value: "rescue", labelKey: "stories.form.categoryOptions.rescue" },
-  { value: "lost_found", labelKey: "stories.form.categoryOptions.lostFound" },
-  { value: "shelter_foster", labelKey: "stories.form.categoryOptions.shelter" },
-  { value: "community", labelKey: "stories.form.categoryOptions.community" }
-];
+const categoryOptions = STORY_CATEGORIES.map((category) => ({
+  value: category.id,
+  labelKey: category.labelKey
+}));
 
 const validateFile = (locale: Locale, file: File | null): string | null => {
   if (!file) return null;
@@ -49,14 +52,20 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
   const [state, formAction] = useFormState(submitStory, initialState);
   const [clientError, setClientError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
-  const [category, setCategory] = useState("rescue");
-  const isCommunity = category === "community";
+  const [category, setCategory] = useState<StoryCategory>(
+    DEFAULT_STORY_CATEGORY
+  );
+  const isAnimalTypeHidden =
+    category === "community_moments" || category === "this_is_pawscue";
+  const isAnimalTypeRequired = category === "rescue" || category === "lost_found";
+  const isImageRequired = category === "rescue" || category === "lost_found";
+  const isCommunity = category === "community_moments";
 
   useEffect(() => {
     if (state.status === "success") {
       formRef.current?.reset();
       setClientError(null);
-      setCategory("rescue");
+      setCategory(DEFAULT_STORY_CATEGORY);
     }
   }, [state.status]);
 
@@ -95,7 +104,7 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
     const beforeFile = beforeInput?.files?.[0] ?? null;
     const afterFile = afterInput?.files?.[0] ?? null;
 
-    if (!beforeFile && !isCommunity) {
+    if (!beforeFile && isImageRequired) {
       event.preventDefault();
       setClientError(t(locale, "stories.error.beforePhotoRequired"));
       return;
@@ -168,7 +177,7 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
           id="category"
           name="category"
           value={category}
-          onChange={(event) => setCategory(event.target.value)}
+          onChange={(event) => setCategory(event.target.value as StoryCategory)}
         >
           {categoryOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -183,15 +192,20 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
         ) : null}
       </div>
 
-      {isCommunity ? null : (
+      {isAnimalTypeHidden ? null : (
         <div className="field">
           <label htmlFor="animal_type">
-            {t(locale, "stories.form.animalType.label")}
+            {t(
+              locale,
+              isAnimalTypeRequired
+                ? "stories.form.animalType.label"
+                : "stories.form.animalType.optionalLabel"
+            )}
           </label>
           <select
             id="animal_type"
             name="animal_type"
-            required
+            required={isAnimalTypeRequired}
             aria-invalid={Boolean(state.fieldErrors?.animal_type)}
             aria-describedby={
               state.fieldErrors?.animal_type ? "animal-type-error" : undefined
@@ -214,7 +228,7 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
           ) : null}
         </div>
       )}
-      {isCommunity ? (
+      {isAnimalTypeHidden ? (
         <input type="hidden" name="animal_type" value="other" />
       ) : null}
 
@@ -308,9 +322,9 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
         <label htmlFor="before_photo">
           {t(
             locale,
-            isCommunity
-              ? "stories.form.beforePhoto.optionalLabel"
-              : "stories.form.beforePhoto.label"
+            isImageRequired
+              ? "stories.form.beforePhoto.label"
+              : "stories.form.beforePhoto.optionalLabel"
           )}
         </label>
         <p className="helper">{t(locale, "stories.form.photo.helper")}</p>
@@ -319,7 +333,7 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
           name="before_photo"
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          required={!isCommunity}
+          required={isImageRequired}
           aria-invalid={Boolean(state.fieldErrors?.before_photo)}
           aria-describedby={
             state.fieldErrors?.before_photo ? "before-photo-error" : undefined
