@@ -11,7 +11,31 @@ export type StoryCategory = (typeof STORY_CATEGORIES)[number]["id"];
 
 export const DEFAULT_STORY_CATEGORY: StoryCategory = "rescue";
 
+export const TRANSFORMATION_STORY_CATEGORIES = [
+  "rescue",
+  "lost_found"
+] as const;
+
+export const GALLERY_STORY_CATEGORIES = [
+  "this_is_pawscue",
+  "shelter_foster",
+  "community_moments",
+  "shared_animal_stories"
+] as const;
+
 const storyCategoryIds = STORY_CATEGORIES.map((category) => category.id);
 
 export const isStoryCategory = (value: string): value is StoryCategory =>
   storyCategoryIds.includes(value as StoryCategory);
+
+export const isTransformationStoryCategory = (
+  value?: string | null
+): value is StoryCategory =>
+  value === "rescue" || value === "lost_found";
+
+export const isGalleryStoryCategory = (
+  value?: string | null
+): value is StoryCategory =>
+  GALLERY_STORY_CATEGORIES.includes(
+    value as (typeof GALLERY_STORY_CATEGORIES)[number]
+  );

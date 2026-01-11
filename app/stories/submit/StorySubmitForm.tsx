@@ -7,6 +7,7 @@ import { t, type Locale } from "@/lib/i18n";
 import {
   DEFAULT_STORY_CATEGORY,
   STORY_CATEGORIES,
+  isGalleryStoryCategory,
   type StoryCategory
 } from "@/lib/storyCategories";
 
@@ -23,6 +24,17 @@ const categoryOptions = STORY_CATEGORIES.map((category) => ({
   value: category.id,
   labelKey: category.labelKey
 }));
+
+const extraPhotoFields = [
+  "photo_3",
+  "photo_4",
+  "photo_5",
+  "photo_6",
+  "photo_7",
+  "photo_8",
+  "photo_9",
+  "photo_10"
+] as const;
 
 const validateFile = (locale: Locale, file: File | null): string | null => {
   if (!file) return null;
@@ -55,12 +67,7 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
   const [category, setCategory] = useState<StoryCategory>(
     DEFAULT_STORY_CATEGORY
   );
-  const isMultiPhotoCategory = [
-    "shelter_foster",
-    "community_moments",
-    "this_is_pawscue",
-    "shared_animal_stories"
-  ].includes(category);
+  const isMultiPhotoCategory = isGalleryStoryCategory(category);
   const isAnimalTypeHidden =
     category === "community_moments" || category === "this_is_pawscue";
   const isAnimalTypeRequired = category === "rescue" || category === "lost_found";
@@ -108,11 +115,7 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
       "after_photo"
     ) as HTMLInputElement | null;
     const extraInputs = isMultiPhotoCategory
-      ? ([
-          "photo_3",
-          "photo_4",
-          "photo_5"
-        ] as const).map(
+      ? extraPhotoFields.map(
           (name) =>
             form.elements.namedItem(name) as HTMLInputElement | null
         )
@@ -335,13 +338,12 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
         <div className="field">
           <label>{t(locale, "stories.form.photos.optionalLabel")}</label>
           <p className="helper">{t(locale, "stories.form.photos.helper")}</p>
+          <p className="helper">{t(locale, "stories.upload.limit10")}</p>
           <div className="photo-inputs">
             {[
               { id: "before_photo", name: "before_photo" },
               { id: "after_photo", name: "after_photo" },
-              { id: "photo_3", name: "photo_3" },
-              { id: "photo_4", name: "photo_4" },
-              { id: "photo_5", name: "photo_5" }
+              ...extraPhotoFields.map((name) => ({ id: name, name }))
             ].map((photoInput, index) => (
               <input
                 key={photoInput.id}

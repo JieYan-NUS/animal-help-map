@@ -5,8 +5,10 @@ import { notFound } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { formatAnimalType, getStoryPhotoUrl } from "@/lib/storyUtils";
 import BeforeAfterSlider from "../BeforeAfterSlider";
+import StoryGallery from "../StoryGallery";
 import { t } from "@/lib/i18n";
 import { getServerLocale } from "@/lib/i18n.server";
+import { isTransformationStoryCategory } from "@/lib/storyCategories";
 
 type PageProps = {
   params: { slug: string };
@@ -23,6 +25,7 @@ type StoryDetail = {
   content: string;
   author_name: string | null;
   author_contact: string | null;
+  category: string | null;
   story_photos?: {
     path: string;
     sort_order: number;
@@ -41,6 +44,7 @@ export default async function StoryDetailPage({ params }: PageProps) {
     .from("stories")
     .select(`
 id, title, slug, animal_type, city, month_year, excerpt, content, author_name, author_contact, published_at,
+category,
 story_photos ( path, sort_order, photo_type )
 `)
     .eq("slug", params.slug)
@@ -55,12 +59,26 @@ story_photos ( path, sort_order, photo_type )
 
   const story = data as StoryDetail;
   const photos = story.story_photos ?? [];
+  const isTransformation =
+    !story.category || isTransformationStoryCategory(story.category);
+  const galleryImages =
+    photos.length > 0
+      ? photos.map((photo, index) => ({
+          src: getStoryPhotoUrl(photo.path),
+          alt: `${story.title} photo ${index + 1}`
+        }))
+      : [
+          {
+            src: "/stories/placeholder-1.svg",
+            alt: `${story.title} photo`
+          }
+        ];
   const beforePhoto =
     photos.find((photo) => photo.photo_type === "before") ?? null;
   const afterPhoto =
     photos.find((photo) => photo.photo_type === "after") ?? null;
   const fallbackPhoto = photos[0] ?? null;
-  const hasPhotoPair = Boolean(beforePhoto && afterPhoto);
+  const hasPhotoPair = Boolean(beforePhoto && afterPhoto) && isTransformation;
   const beforeImage = hasPhotoPair
     ? getStoryPhotoUrl(beforePhoto!.path)
     : fallbackPhoto
@@ -95,7 +113,7 @@ story_photos ( path, sort_order, photo_type )
           sizes="(max-width: 720px) 100vw, 720px"
           priority
         />
-      ) : (
+      ) : isTransformation ? (
         <div className="story-hero">
           <Image
             src={beforeImage}
@@ -105,6 +123,13 @@ story_photos ( path, sort_order, photo_type )
             priority
           />
         </div>
+      ) : (
+        <StoryGallery
+          className="story-hero"
+          images={galleryImages}
+          sizes="(max-width: 720px) 100vw, 720px"
+          priority
+        />
       )}
 
       <section className="story-body">
