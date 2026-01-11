@@ -1,13 +1,14 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
+import type { KeyboardEvent } from "react";
 import Image from "next/image";
 
 type BeforeAfterSliderProps = {
   beforeSrc: string;
-  afterSrc: string;
+  afterSrc?: string | null;
   beforeAlt: string;
-  afterAlt: string;
+  afterAlt?: string;
   className?: string;
   priority?: boolean;
   sizes?: string;
@@ -22,12 +23,40 @@ export default function BeforeAfterSlider({
   priority = false,
   sizes = "(max-width: 720px) 100vw, 50vw"
 }: BeforeAfterSliderProps) {
-  const [value, setValue] = useState(0);
-  const inputId = useId();
+  const [showAfter, setShowAfter] = useState(false);
+  const hasAfter = Boolean(afterSrc);
+  const hintAction = showAfter ? "before" : "after";
+  const ariaLabel = showAfter ? "Show before photo" : "Show after photo";
+
+  const toggle = () => {
+    if (!hasAfter) {
+      return;
+    }
+    setShowAfter((current) => !current);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!hasAfter) {
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggle();
+    }
+  };
 
   return (
-    <div className={`before-after ${className ?? ""}`}>
-      <div className="before-after-layer">
+    <div
+      className={`before-after ${className ?? ""}${
+        hasAfter ? " before-after-toggleable" : ""
+      }`}
+      role={hasAfter ? "button" : undefined}
+      tabIndex={hasAfter ? 0 : undefined}
+      onClick={hasAfter ? toggle : undefined}
+      onKeyDown={hasAfter ? handleKeyDown : undefined}
+      aria-label={hasAfter ? ariaLabel : undefined}
+    >
+      <div className={`before-after-layer ${showAfter ? "is-hidden" : ""}`}>
         <Image
           src={beforeSrc}
           alt={beforeAlt}
@@ -37,44 +66,26 @@ export default function BeforeAfterSlider({
           priority={priority}
         />
       </div>
-      <div
-        className="before-after-layer before-after-after"
-        style={{ width: `${value}%` }}
-      >
-        <Image
-          src={afterSrc}
-          alt={afterAlt}
-          fill
-          sizes={sizes}
-          className="before-after-image"
-          priority={priority}
-        />
-      </div>
-      <span className="before-after-label before-after-label-before">
-        Before
+      {hasAfter ? (
+        <div className={`before-after-layer ${showAfter ? "" : "is-hidden"}`}>
+          <Image
+            src={afterSrc!}
+            alt={afterAlt ?? beforeAlt}
+            fill
+            sizes={sizes}
+            className="before-after-image"
+            priority={priority}
+          />
+        </div>
+      ) : null}
+      <span className="before-after-label">
+        {showAfter ? "After" : "Before"}
       </span>
-      <span className="before-after-label before-after-label-after">After</span>
-      <span className="before-after-hint" aria-hidden="true">
-        Drag to compare
-      </span>
-      <div
-        className="before-after-divider"
-        style={{ left: `${value}%` }}
-        aria-hidden="true"
-      />
-      <label className="sr-only" htmlFor={inputId}>
-        Reveal after photo
-      </label>
-      <input
-        id={inputId}
-        className="before-after-range"
-        type="range"
-        min={0}
-        max={100}
-        value={value}
-        onChange={(event) => setValue(Number(event.target.value))}
-        aria-label="Reveal after photo"
-      />
+      {hasAfter ? (
+        <span className="before-after-hint" aria-hidden="true">
+          Tap or click to see {hintAction}
+        </span>
+      ) : null}
     </div>
   );
 }

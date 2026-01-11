@@ -8,6 +8,11 @@ import { logoutAdmin } from "@/app/admin/actions";
 import { approveStory, rejectStory } from "@/app/admin/stories/[id]/actions";
 import { t } from "@/lib/i18n";
 import { getServerLocale } from "@/lib/i18n.server";
+import {
+  DEFAULT_STORY_CATEGORY,
+  STORY_CATEGORIES,
+  isStoryCategory
+} from "@/lib/storyCategories";
 
 export const dynamic = "force-dynamic";
 
@@ -82,10 +87,15 @@ export default async function AdminStoryDetailPage({
   }
 
   const story = data as StoryDetail;
-  const categoryValue =
+  const rawCategory =
     typeof story.category === "string" && story.category.trim()
       ? story.category.trim()
-      : "rescue";
+      : "";
+  const normalizedCategory =
+    rawCategory === "community" ? "community_moments" : rawCategory;
+  const categoryValue = isStoryCategory(normalizedCategory)
+    ? normalizedCategory
+    : DEFAULT_STORY_CATEGORY;
   const photos = story.story_photos ?? [];
   const photoUrls = photos.map((photo) => {
     const { data: publicData } = supabase.storage
@@ -190,18 +200,11 @@ export default async function AdminStoryDetailPage({
                     name="category"
                     defaultValue={categoryValue}
                   >
-                    <option value="rescue">
-                      {t(locale, "admin.stories.category.rescue")}
-                    </option>
-                    <option value="lost_found">
-                      {t(locale, "admin.stories.category.lostFound")}
-                    </option>
-                    <option value="shelter_foster">
-                      {t(locale, "admin.stories.category.shelter")}
-                    </option>
-                    <option value="community">
-                      {t(locale, "admin.stories.category.community")}
-                    </option>
+                    {STORY_CATEGORIES.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {t(locale, category.labelKey)}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <button className="button" type="submit">

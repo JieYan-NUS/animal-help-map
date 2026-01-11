@@ -3,6 +3,10 @@
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { createStorySlug, sanitizeFileName } from "@/lib/storyUtils";
 import { isLocale, t } from "@/lib/i18n";
+import {
+  DEFAULT_STORY_CATEGORY,
+  isStoryCategory
+} from "@/lib/storyCategories";
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
@@ -39,14 +43,22 @@ export async function submitStory(
   const authorName = getString(formData, "author_name");
   const authorContact = getString(formData, "author_contact");
   const categoryInput = getString(formData, "category");
-  const category = categoryInput ? categoryInput.toLowerCase() : "rescue";
-  const isCommunity = category === "community";
+  const normalizedCategory = categoryInput.toLowerCase();
+  const mappedCategory =
+    normalizedCategory === "community" ? "community_moments" : normalizedCategory;
+  const category = isStoryCategory(mappedCategory)
+    ? mappedCategory
+    : DEFAULT_STORY_CATEGORY;
+  const isAnimalTypeHidden =
+    category === "community_moments" || category === "this_is_pawscue";
+  const isAnimalTypeRequired = category === "rescue" || category === "lost_found";
+  const isImageRequired = category === "rescue" || category === "lost_found";
   const consent = formData.get("consent");
 
   if (!title) fieldErrors.title = t(locale, "stories.error.titleRequired");
-  const normalizedAnimalType = isCommunity ? "other" : animalTypeInput;
+  const animalTypeValue = isAnimalTypeHidden ? "other" : animalTypeInput;
 
-  if (!normalizedAnimalType && !isCommunity) {
+  if (!animalTypeValue && isAnimalTypeRequired) {
     fieldErrors.animal_type = t(locale, "stories.error.animalTypeRequired");
   }
   if (!city) fieldErrors.city = t(locale, "stories.error.cityRequired");
@@ -61,7 +73,9 @@ export async function submitStory(
   }
 
   const allowedAnimalTypes = new Set(["cat", "dog", "bird", "other"]);
-  if (normalizedAnimalType && !allowedAnimalTypes.has(normalizedAnimalType)) {
+  const animalTypeForDb =
+    animalTypeValue || (isAnimalTypeRequired ? "" : "other");
+  if (animalTypeForDb && !allowedAnimalTypes.has(animalTypeForDb)) {
     fieldErrors.animal_type = t(locale, "stories.error.animalTypeInvalid");
   }
 
@@ -93,7 +107,7 @@ export async function submitStory(
     return file;
   };
 
-  const beforeFile = validatePhoto(beforePhoto, "before_photo", !isCommunity);
+  const beforeFile = validatePhoto(beforePhoto, "before_photo", isImageRequired);
   const afterFile = validatePhoto(afterPhoto, "after_photo", false);
 
   if (Object.keys(fieldErrors).length > 0) {
@@ -112,7 +126,7 @@ export async function submitStory(
     id: storyId,
     title,
     slug,
-    animal_type: normalizedAnimalType,
+    animal_type: animalTypeForDb,
     city,
     month_year: monthYear,
     excerpt,

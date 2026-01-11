@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isAdminRequest } from "@/lib/admin/auth";
+import {
+  DEFAULT_STORY_CATEGORY,
+  isStoryCategory
+} from "@/lib/storyCategories";
 
 const requireAdmin = () => {
   if (!isAdminRequest()) {
@@ -36,27 +40,23 @@ export const approveStory = async (formData: FormData) => {
     redirect(`/admin/stories/${storyId}?updated=error`);
   }
 
-  const allowedCategories = new Set([
-    "rescue",
-    "lost_found",
-    "shelter_foster",
-    "community"
-  ]);
   const selectedCategoryRaw = getCategoryInput(formData);
-  const selectedCategory = allowedCategories.has(selectedCategoryRaw)
+  const selectedCategory = isStoryCategory(selectedCategoryRaw)
     ? selectedCategoryRaw
     : "";
   const categoryValue =
     typeof currentStory.category === "string"
       ? currentStory.category.trim()
       : "";
+  const normalizedCategory =
+    categoryValue === "community" ? "community_moments" : categoryValue;
   let categoryUpdate: string | null = null;
   if (selectedCategory) {
-    if (selectedCategory !== categoryValue) {
+    if (selectedCategory !== normalizedCategory) {
       categoryUpdate = selectedCategory;
     }
-  } else if (!categoryValue) {
-    categoryUpdate = "rescue";
+  } else if (!normalizedCategory) {
+    categoryUpdate = DEFAULT_STORY_CATEGORY;
   }
   const updatePayload = {
     status: "approved",

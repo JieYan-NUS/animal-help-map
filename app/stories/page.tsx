@@ -6,6 +6,11 @@ import { formatAnimalType, getStoryPhotoUrl } from "@/lib/storyUtils";
 import BeforeAfterSlider from "./BeforeAfterSlider";
 import { t } from "@/lib/i18n";
 import { getServerLocale } from "@/lib/i18n.server";
+import {
+  DEFAULT_STORY_CATEGORY,
+  STORY_CATEGORIES,
+  isStoryCategory
+} from "@/lib/storyCategories";
 
 type StoryCard = {
   id: string;
@@ -30,14 +35,26 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
   noStore();
   const locale = getServerLocale();
   const supabase = createSupabaseClient();
-  const activeCategory =
-    searchParams?.category === "lost_found"
-      ? "lost_found"
-      : searchParams?.category === "shelter_foster"
-        ? "shelter_foster"
-        : searchParams?.category === "community"
-          ? "community"
-        : "rescue";
+  const categoriesById = STORY_CATEGORIES.reduce(
+    (acc, category) => {
+      acc[category.id] = category;
+      return acc;
+    },
+    {} as Record<(typeof STORY_CATEGORIES)[number]["id"], (typeof STORY_CATEGORIES)[number]>
+  );
+  const tabOrder: (typeof STORY_CATEGORIES)[number]["id"][] = [
+    "this_is_pawscue",
+    "rescue",
+    "lost_found",
+    "community_moments",
+    "shared_animal_stories"
+  ];
+  const categoryParam = searchParams?.category ?? "";
+  const normalizedCategoryParam =
+    categoryParam === "community" ? "community_moments" : categoryParam;
+  const activeCategory = isStoryCategory(normalizedCategoryParam)
+    ? normalizedCategoryParam
+    : DEFAULT_STORY_CATEGORY;
 
   let storiesQuery = supabase
     .from("stories")
@@ -53,8 +70,12 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
     storiesQuery = storiesQuery.eq("category", "lost_found");
   } else if (activeCategory === "shelter_foster") {
     storiesQuery = storiesQuery.eq("category", "shelter_foster");
-  } else if (activeCategory === "community") {
-    storiesQuery = storiesQuery.eq("category", "community");
+  } else if (activeCategory === "community_moments") {
+    storiesQuery = storiesQuery.or("category.eq.community_moments,category.eq.community");
+  } else if (activeCategory === "this_is_pawscue") {
+    storiesQuery = storiesQuery.eq("category", "this_is_pawscue");
+  } else if (activeCategory === "shared_animal_stories") {
+    storiesQuery = storiesQuery.eq("category", "shared_animal_stories");
   } else {
     storiesQuery = storiesQuery.or("category.eq.rescue,category.is.null,category.eq.");
   }
@@ -73,49 +94,34 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
         <div className="stories-header-row">
           <div>
             <h1>{t(locale, "stories.title")}</h1>
-            <p className="stories-subtitle">
-              {activeCategory === "community"
-                ? t(locale, "stories.tabs.communityDescription")
-                : t(locale, "stories.subtitle")}
-            </p>
           </div>
           <Link className="button" href="/stories/submit">
             {t(locale, "stories.submitCta")}
           </Link>
         </div>
         <div className="stories-tabs" role="tablist" aria-label={t(locale, "stories.tabs.label")}>
-          <Link
-            className={`stories-tab${activeCategory === "rescue" ? " is-active" : ""}`}
-            href="/stories"
-            role="tab"
-            aria-selected={activeCategory === "rescue"}
-          >
-            {t(locale, "stories.tabs.rescue")}
-          </Link>
-          <Link
-            className={`stories-tab${activeCategory === "lost_found" ? " is-active" : ""}`}
-            href="/stories?category=lost_found"
-            role="tab"
-            aria-selected={activeCategory === "lost_found"}
-          >
-            {t(locale, "stories.tabs.lostFound")}
-          </Link>
-          <Link
-            className={`stories-tab${activeCategory === "shelter_foster" ? " is-active" : ""}`}
-            href="/stories?category=shelter_foster"
-            role="tab"
-            aria-selected={activeCategory === "shelter_foster"}
-          >
-            {t(locale, "stories.tabs.shelter")}
-          </Link>
-          <Link
-            className={`stories-tab${activeCategory === "community" ? " is-active" : ""}`}
-            href="/stories?category=community"
-            role="tab"
-            aria-selected={activeCategory === "community"}
-          >
-            {t(locale, "stories.tabs.community")}
-          </Link>
+          {tabOrder.map((categoryId) => {
+            const category = categoriesById[categoryId];
+            if (!category) {
+              return null;
+            }
+            const isActive = activeCategory === category.id;
+            const href =
+              category.id === DEFAULT_STORY_CATEGORY
+                ? "/stories"
+                : `/stories?category=${category.id}`;
+            return (
+              <Link
+                key={category.id}
+                className={`stories-tab${isActive ? " is-active" : ""}`}
+                href={href}
+                role="tab"
+                aria-selected={isActive}
+              >
+                {t(locale, category.labelKey)}
+              </Link>
+            );
+          })}
         </div>
       </header>
 
