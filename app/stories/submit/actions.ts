@@ -53,6 +53,12 @@ export async function submitStory(
     category === "community_moments" || category === "this_is_pawscue";
   const isAnimalTypeRequired = category === "rescue" || category === "lost_found";
   const isImageRequired = category === "rescue" || category === "lost_found";
+  const isMultiPhotoCategory = [
+    "shelter_foster",
+    "community_moments",
+    "this_is_pawscue",
+    "shared_animal_stories"
+  ].includes(category);
   const consent = formData.get("consent");
 
   if (!title) fieldErrors.title = t(locale, "stories.error.titleRequired");
@@ -81,6 +87,13 @@ export async function submitStory(
 
   const beforePhoto = formData.get("before_photo");
   const afterPhoto = formData.get("after_photo");
+  const extraPhotoKeys = ["photo_3", "photo_4", "photo_5"] as const;
+  const extraPhotos = isMultiPhotoCategory
+    ? extraPhotoKeys.map((key) => ({
+        key,
+        value: formData.get(key)
+      }))
+    : [];
 
   const validatePhoto = (
     file: unknown,
@@ -109,6 +122,17 @@ export async function submitStory(
 
   const beforeFile = validatePhoto(beforePhoto, "before_photo", isImageRequired);
   const afterFile = validatePhoto(afterPhoto, "after_photo", false);
+  const extraFiles = extraPhotos
+    .map(({ key, value }) => ({
+      key,
+      file: validatePhoto(value, key, false)
+    }))
+    .filter(
+      (
+        entry
+      ): entry is { key: (typeof extraPhotoKeys)[number]; file: File } =>
+        Boolean(entry.file)
+    );
 
   if (Object.keys(fieldErrors).length > 0) {
     return {
@@ -157,14 +181,21 @@ export async function submitStory(
     };
   }
 
-  const uploadedPaths: { path: string; photo_type: "before" | "after" }[] = [];
+  const uploadedPaths: {
+    path: string;
+    photo_type: "before" | "after" | null;
+  }[] = [];
 
-  const uploadPhoto = async (file: File, photoType: "before" | "after") => {
+  const uploadPhoto = async (
+    file: File,
+    filenameBase: string,
+    photoType: "before" | "after" | null
+  ) => {
     const safeName = sanitizeFileName(file.name);
     const extension = safeName.includes(".")
       ? safeName.split(".").pop()
       : undefined;
-    const filename = extension ? `${photoType}.${extension}` : photoType;
+    const filename = extension ? `${filenameBase}.${extension}` : filenameBase;
     const path = `stories/${storyId}/${filename}`;
 
     // Requires the "story-photos" bucket to exist (public for Phase B).
@@ -189,12 +220,19 @@ export async function submitStory(
   };
 
   if (beforeFile) {
-    const uploadState = await uploadPhoto(beforeFile, "before");
+    const uploadState = await uploadPhoto(beforeFile, "before", "before");
     if (uploadState) return uploadState;
   }
 
   if (afterFile) {
-    const uploadState = await uploadPhoto(afterFile, "after");
+    const uploadState = await uploadPhoto(afterFile, "after", "after");
+    if (uploadState) return uploadState;
+  }
+
+  for (const extra of extraFiles) {
+    if (!extra.file) continue;
+    const filenameBase = extra.key.replace("_", "-");
+    const uploadState = await uploadPhoto(extra.file, filenameBase, null);
     if (uploadState) return uploadState;
   }
 

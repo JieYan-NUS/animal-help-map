@@ -257,6 +257,12 @@ p {
   color: #4a4038;
 }
 
+.photo-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
 .error {
   margin-top: 0.4rem;
   color: #9b2c2c;

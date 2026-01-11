@@ -55,6 +55,12 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
   const [category, setCategory] = useState<StoryCategory>(
     DEFAULT_STORY_CATEGORY
   );
+  const isMultiPhotoCategory = [
+    "shelter_foster",
+    "community_moments",
+    "this_is_pawscue",
+    "shared_animal_stories"
+  ].includes(category);
   const isAnimalTypeHidden =
     category === "community_moments" || category === "this_is_pawscue";
   const isAnimalTypeRequired = category === "rescue" || category === "lost_found";
@@ -101,8 +107,21 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
     const afterInput = form.elements.namedItem(
       "after_photo"
     ) as HTMLInputElement | null;
+    const extraInputs = isMultiPhotoCategory
+      ? ([
+          "photo_3",
+          "photo_4",
+          "photo_5"
+        ] as const).map(
+          (name) =>
+            form.elements.namedItem(name) as HTMLInputElement | null
+        )
+      : [];
     const beforeFile = beforeInput?.files?.[0] ?? null;
     const afterFile = afterInput?.files?.[0] ?? null;
+    const extraFiles = extraInputs
+      .map((input) => input?.files?.[0] ?? null)
+      .filter((file): file is File => Boolean(file));
 
     if (!beforeFile && isImageRequired) {
       event.preventDefault();
@@ -110,20 +129,14 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
       return;
     }
 
-    if (beforeFile) {
-      const beforeError = validateFile(locale, beforeFile);
-      if (beforeError) {
+    const filesToValidate = [beforeFile, afterFile, ...extraFiles];
+    for (const file of filesToValidate) {
+      if (!file) continue;
+      const fileError = validateFile(locale, file);
+      if (fileError) {
         event.preventDefault();
-        setClientError(beforeError);
+        setClientError(fileError);
         return;
-      }
-    }
-
-    if (afterFile) {
-      const afterError = validateFile(locale, afterFile);
-      if (afterError) {
-        event.preventDefault();
-        setClientError(afterError);
       }
     }
   };
@@ -318,56 +331,100 @@ export default function StorySubmitForm({ locale }: { locale: Locale }) {
         <input id="author_contact" name="author_contact" type="text" />
       </div>
 
-      <div className="field">
-        <label htmlFor="before_photo">
-          {t(
-            locale,
-            isImageRequired
-              ? "stories.form.beforePhoto.label"
-              : "stories.form.beforePhoto.optionalLabel"
-          )}
-        </label>
-        <p className="helper">{t(locale, "stories.form.photo.helper")}</p>
-        <input
-          id="before_photo"
-          name="before_photo"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          required={isImageRequired}
-          aria-invalid={Boolean(state.fieldErrors?.before_photo)}
-          aria-describedby={
-            state.fieldErrors?.before_photo ? "before-photo-error" : undefined
-          }
-        />
-        {state.fieldErrors?.before_photo ? (
-          <p className="error" id="before-photo-error">
-            {state.fieldErrors.before_photo}
-          </p>
-        ) : null}
-      </div>
-
-      {isCommunity ? null : (
+      {isMultiPhotoCategory ? (
         <div className="field">
-          <label htmlFor="after_photo">
-            {t(locale, "stories.form.afterPhoto.label")}
-          </label>
-          <p className="helper">{t(locale, "stories.form.photo.helper")}</p>
-          <input
-            id="after_photo"
-            name="after_photo"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            aria-invalid={Boolean(state.fieldErrors?.after_photo)}
-            aria-describedby={
-              state.fieldErrors?.after_photo ? "after-photo-error" : undefined
-            }
-          />
+          <label>{t(locale, "stories.form.photos.optionalLabel")}</label>
+          <p className="helper">{t(locale, "stories.form.photos.helper")}</p>
+          <div className="photo-inputs">
+            {[
+              { id: "before_photo", name: "before_photo" },
+              { id: "after_photo", name: "after_photo" },
+              { id: "photo_3", name: "photo_3" },
+              { id: "photo_4", name: "photo_4" },
+              { id: "photo_5", name: "photo_5" }
+            ].map((photoInput, index) => (
+              <input
+                key={photoInput.id}
+                id={photoInput.id}
+                name={photoInput.name}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                aria-label={`${t(locale, "stories.form.photos.slotLabel")} ${
+                  index + 1
+                }`}
+                aria-invalid={
+                  photoInput.name === "before_photo"
+                    ? Boolean(state.fieldErrors?.before_photo)
+                    : photoInput.name === "after_photo"
+                      ? Boolean(state.fieldErrors?.after_photo)
+                      : undefined
+                }
+              />
+            ))}
+          </div>
+          {state.fieldErrors?.before_photo ? (
+            <p className="error" id="before-photo-error">
+              {state.fieldErrors.before_photo}
+            </p>
+          ) : null}
           {state.fieldErrors?.after_photo ? (
             <p className="error" id="after-photo-error">
               {state.fieldErrors.after_photo}
             </p>
           ) : null}
         </div>
+      ) : (
+        <>
+          <div className="field">
+            <label htmlFor="before_photo">
+              {t(
+                locale,
+                isImageRequired
+                  ? "stories.form.beforePhoto.label"
+                  : "stories.form.beforePhoto.optionalLabel"
+              )}
+            </label>
+            <p className="helper">{t(locale, "stories.form.photo.helper")}</p>
+            <input
+              id="before_photo"
+              name="before_photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              required={isImageRequired}
+              aria-invalid={Boolean(state.fieldErrors?.before_photo)}
+              aria-describedby={
+                state.fieldErrors?.before_photo ? "before-photo-error" : undefined
+              }
+            />
+            {state.fieldErrors?.before_photo ? (
+              <p className="error" id="before-photo-error">
+                {state.fieldErrors.before_photo}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="field">
+            <label htmlFor="after_photo">
+              {t(locale, "stories.form.afterPhoto.label")}
+            </label>
+            <p className="helper">{t(locale, "stories.form.photo.helper")}</p>
+            <input
+              id="after_photo"
+              name="after_photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              aria-invalid={Boolean(state.fieldErrors?.after_photo)}
+              aria-describedby={
+                state.fieldErrors?.after_photo ? "after-photo-error" : undefined
+              }
+            />
+            {state.fieldErrors?.after_photo ? (
+              <p className="error" id="after-photo-error">
+                {state.fieldErrors.after_photo}
+              </p>
+            ) : null}
+          </div>
+        </>
       )}
 
       <div className="field">
