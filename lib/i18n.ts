@@ -385,6 +385,13 @@ export const translations: TranslationMap = {
     "stories.form.photos.optionalLabel": "Photos (optional)",
     "stories.form.photos.helper": "JPG, PNG, or WebP. Max 5MB each.",
     "stories.upload.limit10": "Up to 10 photos",
+    "stories.upload.limit_title": "Image upload size limit",
+    "stories.upload.limit_body":
+      "To keep uploads reliable, total image size should stay under ~4MB. If your images are large, please upload fewer or use JPG to reduce size.",
+    "stories.upload.error_too_large":
+      "Upload too large. Please reduce total image size (try JPG).",
+    "stories.upload.error_generic":
+      "We could not submit your story right now. Please try again.",
     "stories.form.photos.slotLabel": "Photo",
     "stories.form.beforePhoto.label": "Before photo (required)",
     "stories.form.beforePhoto.optionalLabel": "Before photo (optional)",
@@ -782,6 +789,12 @@ export const translations: TranslationMap = {
     "stories.form.photos.optionalLabel": "照片（选填）",
     "stories.form.photos.helper": "支持 JPG、PNG、WebP，单张最大 5MB。",
     "stories.upload.limit10": "最多10张照片",
+    "stories.upload.limit_title": "图片上传大小限制",
+    "stories.upload.limit_body":
+      "为保证上传稳定，图片总大小建议控制在约 4MB 以内。若图片较大，请减少数量或使用 JPG 格式压缩后再上传。",
+    "stories.upload.error_too_large":
+      "上传内容过大。请减少图片总大小（建议使用 JPG 压缩）。",
+    "stories.upload.error_generic": "提交失败，请稍后再试。",
     "stories.form.photos.slotLabel": "照片",
     "stories.form.beforePhoto.label": "救助前照片（必填）",
     "stories.form.beforePhoto.optionalLabel": "救助前照片（选填）",
