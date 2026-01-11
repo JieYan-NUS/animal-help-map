@@ -4,12 +4,14 @@ import { unstable_noStore as noStore } from "next/cache";
 import { createSupabaseClient } from "@/lib/supabaseClient";
 import { formatAnimalType, getStoryPhotoUrl } from "@/lib/storyUtils";
 import BeforeAfterSlider from "./BeforeAfterSlider";
+import StoryGallery from "./StoryGallery";
 import { t } from "@/lib/i18n";
 import { getServerLocale } from "@/lib/i18n.server";
 import {
   DEFAULT_STORY_CATEGORY,
   STORY_CATEGORIES,
-  isStoryCategory
+  isStoryCategory,
+  isTransformationStoryCategory
 } from "@/lib/storyCategories";
 
 type StoryCard = {
@@ -20,6 +22,7 @@ type StoryCard = {
   animal_type: string;
   city: string;
   month_year: string;
+  category: string | null;
   story_photos?: {
     path: string;
     sort_order: number;
@@ -59,7 +62,7 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
   let storiesQuery = supabase
     .from("stories")
     .select(
-      "id, slug, title, excerpt, animal_type, city, month_year, story_photos (path, sort_order, photo_type)"
+      "id, slug, title, excerpt, animal_type, city, month_year, category, story_photos (path, sort_order, photo_type)"
     )
     .eq("status", "approved")
     .not("published_at", "is", null)
@@ -133,12 +136,26 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
         <section className="stories-grid" aria-label={t(locale, "stories.listLabel")}>
           {stories.map((story) => {
             const photos = story.story_photos ?? [];
+            const isTransformation =
+              !story.category || isTransformationStoryCategory(story.category);
+            const galleryImages =
+              photos.length > 0
+                ? photos.map((photo, index) => ({
+                    src: getStoryPhotoUrl(photo.path),
+                    alt: `Photo ${index + 1} for ${story.title}`
+                  }))
+                : [
+                    {
+                      src: "/stories/placeholder-1.svg",
+                      alt: `Cover for ${story.title}`
+                    }
+                  ];
             const beforePhoto =
               photos.find((photo) => photo.photo_type === "before") ?? null;
             const afterPhoto =
               photos.find((photo) => photo.photo_type === "after") ?? null;
             const fallbackPhoto = photos[0] ?? null;
-            const hasPhotoPair = Boolean(beforePhoto && afterPhoto);
+            const hasPhotoPair = Boolean(beforePhoto && afterPhoto) && isTransformation;
             const beforeImage = hasPhotoPair
               ? getStoryPhotoUrl(beforePhoto!.path)
               : fallbackPhoto
@@ -158,7 +175,7 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
                     beforeAlt={`Before photo for ${story.title}`}
                     afterAlt={`After photo for ${story.title}`}
                   />
-                ) : (
+                ) : isTransformation ? (
                   <div className="story-card-image">
                     <Image
                       alt={`Cover for ${story.title}`}
@@ -167,6 +184,12 @@ export default async function StoriesPage({ searchParams }: StoriesPageProps) {
                       sizes="(max-width: 720px) 100vw, 50vw"
                     />
                   </div>
+                ) : (
+                  <StoryGallery
+                    className="story-card-image"
+                    images={galleryImages}
+                    sizes="(max-width: 720px) 100vw, 50vw"
+                  />
                 )}
                 <div className="story-card-body">
                   <div className="story-card-meta">

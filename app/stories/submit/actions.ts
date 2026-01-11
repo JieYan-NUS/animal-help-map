@@ -5,6 +5,7 @@ import { createStorySlug, sanitizeFileName } from "@/lib/storyUtils";
 import { isLocale, t } from "@/lib/i18n";
 import {
   DEFAULT_STORY_CATEGORY,
+  isGalleryStoryCategory,
   isStoryCategory
 } from "@/lib/storyCategories";
 
@@ -53,12 +54,7 @@ export async function submitStory(
     category === "community_moments" || category === "this_is_pawscue";
   const isAnimalTypeRequired = category === "rescue" || category === "lost_found";
   const isImageRequired = category === "rescue" || category === "lost_found";
-  const isMultiPhotoCategory = [
-    "shelter_foster",
-    "community_moments",
-    "this_is_pawscue",
-    "shared_animal_stories"
-  ].includes(category);
+  const isMultiPhotoCategory = isGalleryStoryCategory(category);
   const consent = formData.get("consent");
 
   if (!title) fieldErrors.title = t(locale, "stories.error.titleRequired");
@@ -87,7 +83,16 @@ export async function submitStory(
 
   const beforePhoto = formData.get("before_photo");
   const afterPhoto = formData.get("after_photo");
-  const extraPhotoKeys = ["photo_3", "photo_4", "photo_5"] as const;
+  const extraPhotoKeys = [
+    "photo_3",
+    "photo_4",
+    "photo_5",
+    "photo_6",
+    "photo_7",
+    "photo_8",
+    "photo_9",
+    "photo_10"
+  ] as const;
   const extraPhotos = isMultiPhotoCategory
     ? extraPhotoKeys.map((key) => ({
         key,
