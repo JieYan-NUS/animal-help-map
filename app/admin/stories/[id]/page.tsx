@@ -45,9 +45,6 @@ type StoryDetail = {
   story_photos?: StoryPhoto[] | null;
 };
 
-const splitBody = (body: string): string[] =>
-  body.split("\n\n").map((paragraph) => paragraph.trim()).filter(Boolean);
-
 const statusCopy: Record<string, string> = {
   approved: "Story approved.",
   rejected: "Story rejected.",
@@ -148,11 +145,7 @@ export default async function AdminStoryDetailPage({
       <section className="admin-story-detail">
         <div className="admin-story-card">
           <p className="admin-story-excerpt">{story.excerpt}</p>
-          <div className="admin-story-content">
-            {splitBody(story.content).map((paragraph, index) => (
-              <p key={`${story.id}-para-${index}`}>{paragraph}</p>
-            ))}
-          </div>
+          <div className="admin-story-content">{story.content}</div>
         </div>
 
         <aside className="admin-sidebar">

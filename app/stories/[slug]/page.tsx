@@ -33,9 +33,6 @@ type StoryDetail = {
   }[] | null;
 };
 
-const splitBody = (body: string): string[] =>
-  body.split("\n\n").map((paragraph) => paragraph.trim()).filter(Boolean);
-
 export default async function StoryDetailPage({ params }: PageProps) {
   noStore();
   const locale = getServerLocale();
@@ -133,9 +130,7 @@ story_photos ( path, sort_order, photo_type )
       )}
 
       <section className="story-body">
-        {splitBody(story.content).map((paragraph, index) => (
-          <p key={`${story.slug}-para-${index}`}>{paragraph}</p>
-        ))}
+        <div className="story-content">{story.content}</div>
       </section>
 
       {(story.author_name || story.author_contact) && (

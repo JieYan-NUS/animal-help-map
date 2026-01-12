@@ -691,8 +691,8 @@ p {
   color: #3f352d;
 }
 
-.story-body p {
-  margin-bottom: 1.1rem;
+.story-content {
+  white-space: pre-line;
 }
 
 .admin-header {
@@ -859,8 +859,8 @@ p {
   margin-bottom: 1.5rem;
 }
 
-.admin-story-content p {
-  margin-bottom: 1rem;
+.admin-story-content {
+  white-space: pre-line;
 }
 
 .admin-sidebar {
