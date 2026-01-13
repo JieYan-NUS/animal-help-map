@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Script from "next/script";
 import LanguageToggle from "@/components/LanguageToggle";
 import { t } from "@/lib/i18n";
 import { getServerLocale } from "@/lib/i18n.server";
@@ -17,9 +18,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const locale = getServerLocale();
+  const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const contactEmail = "pawscueglobal@gmail.com";
   return (
     <html lang={locale}>
+      <head>
+        {gaId ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga4-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${gaId}', { page_path: window.location.pathname });
+              `}
+            </Script>
+          </>
+        ) : null}
+      </head>
       <body>
         <nav>
           <Link href="/">{t(locale, "nav.home")}</Link>
