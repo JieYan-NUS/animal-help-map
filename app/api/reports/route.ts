@@ -83,7 +83,7 @@ const fetchReverseGeocode = async (
   latitude: number,
   longitude: number
 ): Promise<{ address: string | null }> => {
-  const token = process.env.MAPBOX_API_KEY;
+  const token = process.env.MAPBOX_ACCESS_TOKEN;
   if (!token) return { address: null };
 
   const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&limit=1`;
